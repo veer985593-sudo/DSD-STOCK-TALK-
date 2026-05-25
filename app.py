@@ -12,7 +12,8 @@ import yfinance as yf
 
 # Must be first Streamlit command
 st.set_page_config(
-    page_title="Stock Research Assistant 🇮🇳",
+    page_title="DSD STOCK TALK™",
+
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -1695,7 +1696,7 @@ def main():
     else:
         # Landing page when no stock selected
         st.markdown("""
-        ### 👋 Welcome to Stock Research Assistant!
+        ### ​👋 Welcome to DSD STOCK TALK™!
         
         **Get started:**
         1. Enter a stock symbol in the sidebar (e.g., `RELIANCE`, `TCS`, `INFY`)
