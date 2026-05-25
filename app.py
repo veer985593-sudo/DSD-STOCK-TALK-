@@ -1711,14 +1711,14 @@ def main():
         - 🤖 Full AI-powered research reports
         """)
         
-        # Show some popular stocks
+                # Show some popular stocks
         st.subheader("🔥 Popular Stocks")
         
         cols = st.columns(5)
-        popular = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK"]
+        popular = ("RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK")
         
-        for i, stock in enumerate(popular):
-            with cols[i]:
+        for col, stock in zip(cols, popular):
+            with col:
                 try:
                     price_data = json.loads(get_stock_price.run(stock))
                     change = price_data.get("change_percent", 0)
@@ -1729,8 +1729,96 @@ def main():
                         f"{change:+.2f}%"
                     )
                 except Exception:
-                    st.metric(stock, "—", help="Price data temporarily unavailable")
+                    st.metric(stock, "-", help="Price data temporarily unavailable")
+                    
+        # --- SECTOR PERFORMANCE SECTION ---
+        st.divider()
+        st.subheader("📊 1-Month Sector Performance")
+        st.write("पिछले 1 महीने में NSE के प्रमुख सेक्टर्स का प्रदर्शन:")
+        
+        sectors = {
+            "Nifty Bank": "^NSEBANK",
+            "Nifty IT": "^CNXIT",
+            "Nifty Auto": "^CNXAUTO",
+            "Nifty FMCG": "^CNXFMCG",
+            "Nifty Pharma": "^CNXPHARMA",
+            "Nifty Metal": "^CNXMETAL",
+            "Nifty Realty": "^CNXREALTY"
+        }
+        
+        sector_returns = {}
+        for sector_name, ticker in sectors.items():
+            try:
+                hist = yf.Ticker(ticker).history(period="1mo")
+                if len(hist) > 0:
+                    start_price = hist.Close.head(1).item()
+                    end_price = hist.Close.tail(1).item()
+                    pct_change = ((end_price - start_price) / start_price) * 100
+                    sector_returns[sector_name] = pct_change
+            except Exception as e:
+                pass
+                
+        if sector_returns:
+            df_sectors = pd.DataFrame(dict(Sector=list(sector_returns.keys()), Return=list(sector_returns.values())))
+            df_sectors.set_index("Sector", inplace=True)
+            st.bar_chart(df_sectors, color="#1f77b4")
 
+        # --- DSD BREAKOUT & 52-WEEK HIGH SCREENER ---
+        st.divider()
+        st.subheader("⚡ DSD Breakout & 52-Week High Radar")
+        st.write("यह लाइव स्कैनर आपकी वॉचलिस्ट के प्रमुख स्टॉक्स को ऑटोमैटिक स्कैन करता है:")
+        
+        @st.cache_data(ttl=3600)
+        def scan_market_data():
+            tickers = ("RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS", "BHARTIARTL.NS", "SBIN.NS", "ITC.NS", "MARUTI.NS", "M&M.NS", "AXISBANK.NS", "EICHERMOT.NS", "ADANIENT.NS", "BAJFINANCE.NS", "LT.NS")
+            high_52w_list = ()
+            volume_breakout_list = ()
+            
+            for t in tickers:
+                try:
+                    hist = yf.Ticker(t).history(period="1y")
+                    if len(hist) < 20:
+                        continue
+                    
+                    # Current price and 52W High (completely bracket-free)
+                    current_price = hist.Close.tail(1).item()
+                    high_52w = hist.High.max()
+                    
+                    # Within 1.5% of 52W High
+                    if current_price >= (high_52w * 0.985):
+                        high_52w_list = high_52w_list + (dict(Symbol=t.replace(".NS", ""), Price=round(current_price, 2), High52W=round(high_52w, 2)),)
+                    
+                    # Volume Breakout (Volume > 2x of 20-day Avg and Positive Close)
+                    avg_vol_20d = hist.Volume.tail(21).head(20).mean()
+                    today_vol = hist.Volume.tail(1).item()
+                    yesterday_close = hist.Close.tail(2).head(1).item()
+                    today_return = (current_price - yesterday_close) / yesterday_close
+                    
+                    if today_vol >= (avg_vol_20d * 2.0) and today_return > 0:
+                        vol_ratio = round(today_vol / avg_vol_20d, 2)
+                        volume_breakout_list = volume_breakout_list + (dict(Symbol=t.replace(".NS", ""), Price=round(current_price, 2), VolRatio=f"{vol_ratio}x", Change=f"{round(today_return*100,2)}%"),)
+                except Exception:
+                    pass
+            return high_52w_list, volume_breakout_list
+
+        with st.spinner("Scanning market for breakouts and 52W highs..."):
+            high_52w_data, breakout_data = scan_market_data()
+
+        col_radar1, col_radar2 = st.columns(2)
+        with col_radar1:
+            st.write("🎯 **Stocks near 52-Week High (within 1.5%):**")
+            if high_52w_data:
+                st.dataframe(pd.DataFrame(list(high_52w_data)))
+            else:
+                st.info("No stocks currently near 52-week high in our watchlist.")
+
+        with col_radar2:
+            st.write("🔥 **High Volume Breakout Stocks (>2x Avg Vol & Green Close):**")
+            if breakout_data:
+                st.dataframe(pd.DataFrame(list(breakout_data)))
+            else:
+                st.info("No high volume breakout stocks detected today.")
 
 if __name__ == "__main__":  # pragma: no cover
     main()
+            
