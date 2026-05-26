@@ -612,86 +612,86 @@ def render_stock_overview(symbol: str):
         with st.spinner("Loading chart..."):
             chart_df = _fetch_chart_data(symbol, selected_period)
 
-        if not chart_df.empty:
-            line_color = "#00C851" if change >= 0 else "#ff4444"
-            fill_color = "rgba(0,200,81,0.10)" if change >= 0 else "rgba(255,68,68,0.10)"
-            is_intraday = selected_period in ("1D", "1W", "1M")
+            if not chart_df.empty:
+        line_color = "#00C851" if change >= 0 else "#ff4444"
+        fill_color = "rgba(0,200,81,0.10)" if change >= 0 else "rgba(255,68,68,0.10)"
+        is_intraday = selected_period in ("1D", "1W", "1M")
 
-            # Hover: show 12-hour time for intraday, date for daily
-            if is_intraday:
-                hover_tpl = "₹%{y:,.2f}<extra>%{x|%d %b %Y, %I:%M %p} IST</extra>"
-            else:
-                hover_tpl = "₹%{y:,.2f}<extra>%{x|%d %b %Y}</extra>"
+        # Hover template: show 12-hour time for intraday, date for daily
+        if is_intraday:
+            hover_tpl = "%{y:.2f}<extra>%{x|%d %b %Y, %I:%M %p} IST</extra>"
+        else:
+            hover_tpl = "%{y:.2f}<extra>%{x|%d %b %Y}</extra>"
 
-                fig = go.Figure()
+        # --- Candlestick Chart Setup ---
+        fig = go.Figure()
 
-    # 1. Candlestick Trace (कैंडल चार्ट बनाना)
-    fig.add_trace(
-        go.Candlestick(
-            x=chart_df.index,
-            open=chart_df["Open"],
-            high=chart_df["High"],
-            low=chart_df["Low"],
-            close=chart_df["Close"],
-            name="Price"
-        )
-    )
-
-    # 2. SMA 20 Indicator (नारंगी लाइन) जोड़ना
-    if len(chart_df) >= 20:
-        sma20 = chart_df["Close"].rolling(window=20).mean()
+        # 1. Candlestick Trace (कैंडलस्टिक चार्ट)
         fig.add_trace(
-            go.Scatter(
+            go.Candlestick(
                 x=chart_df.index,
-                y=sma20,
-                mode="lines",
-                line=dict(color="orange", width=1.5),
-                name="SMA 20"
+                open=chart_df.Open,
+                high=chart_df.High,
+                low=chart_df.Low,
+                close=chart_df.Close,
+                name="Price"
             )
         )
 
-    # 3. SMA 50 Indicator (नीली लाइन) जोड़ना
-    if len(chart_df) >= 50:
-        sma50 = chart_df["Close"].rolling(window=50).mean()
-        fig.add_trace(
-            go.Scatter(
-                x=chart_df.index,
-                y=sma50,
-                mode="lines",
-                line=dict(color="#2196f3", width=1.5),
-                name="SMA 50"
+        # 2. SMA 20 Line (नारंगी रंग में)
+        if len(chart_df) >= 20:
+            sma20 = chart_df.Close.rolling(window=20).mean()
+            fig.add_trace(
+                go.Scatter(
+                    x=chart_df.index,
+                    y=sma20,
+                    mode="lines",
+                    line=dict(color="orange", width=1.5),
+                    name="SMA 20"
+                )
             )
+
+        # 3. SMA 50 Line (नीले रंग में)
+        if len(chart_df) >= 50:
+            sma50 = chart_df.Close.rolling(window=50).mean()
+            fig.add_trace(
+                go.Scatter(
+                    x=chart_df.index,
+                    y=sma50,
+                    mode="lines",
+                    line=dict(color="#2196f3", width=1.5),
+                    name="SMA 50"
+                )
+            )
+
+        # Pad y-axis: चार्ट के ऊपर और नीचे थोड़ा खाली स्पेस जोड़ने के लिए
+        y_min = float(chart_df.Close.min())
+        y_max = float(chart_df.Close.max())
+        y_pad = (y_max - y_min) * 0.05 or 1
+
+        xaxis_opts = dict(showgrid=False)
+        if is_intraday:
+            xaxis_opts["tickformat"] = "%-I:%M %p"
+
+        # 4. Mobile Friendly Styling (स्लाइडर छुपाना और थीम)
+        fig.update_layout(
+            height=380,
+            margin=dict(l=0, r=0, t=10, b=0),
+            xaxis=xaxis_opts,
+            yaxis=dict(
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.05)",
+                side="right",
+                range=(y_min - y_pad, y_max + y_pad),
+                tickprefix="₹"
+            ),
+            xaxis_rangeslider_visible=False,
+            template="plotly_dark",
+            showlegend=True
         )
 
-    # 4. नीचे का स्लाइडर छुपाएं (ताकि मोबाइल पर साफ दिखे)
-    fig.update_layout(xaxis_rangeslider_visible=False)
-    
+        st.plotly_chart(fig, use_container_width=True, key=f"chart_{symbol}_{selected_period}")
 
-            # Pad y-axis 5% above and below the data range
-            y_min = float(chart_df["Close"].min())
-            y_max = float(chart_df["Close"].max())
-            y_pad = (y_max - y_min) * 0.05 or 1
-
-            xaxis_opts: dict = dict(showgrid=False)
-            if is_intraday:
-                xaxis_opts["tickformat"] = "%-I:%M %p"
-
-            fig.update_layout(
-                height=380,
-                margin=dict(l=0, r=0, t=10, b=0),
-                xaxis=xaxis_opts,
-                yaxis=dict(
-                    showgrid=True,
-                    gridcolor="rgba(255,255,255,0.05)",
-                    side="right",
-                    range=[y_min - y_pad, y_max + y_pad],
-                    tickprefix="₹",
-                ),
-                plot_bgcolor="rgba(0,0,0,0)",
-                paper_bgcolor="rgba(0,0,0,0)",
-                hovermode="x unified",
-            )
-            st.plotly_chart(fig, use_container_width=True, key=f"chart_{symbol}_{selected_period}")
         else:
             st.info("Chart data not available for this period.")
 
