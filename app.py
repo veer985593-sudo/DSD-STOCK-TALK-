@@ -623,33 +623,49 @@ def render_stock_overview(symbol: str):
             else:
                 hover_tpl = "₹%{y:,.2f}<extra>%{x|%d %b %Y}</extra>"
 
-            fig = go.Figure()
+                fig = go.Figure()
 
-            # Invisible baseline trace at the data min so fill doesn't go to y=0
-            y_floor = float(chart_df["Close"].min())
-            fig.add_trace(
-                go.Scatter(
-                    x=chart_df.index,
-                    y=[y_floor] * len(chart_df),
-                    mode="lines",
-                    line=dict(width=0),
-                    showlegend=False,
-                    hoverinfo="skip",
-                )
-            )
+    # 1. Candlestick Trace (कैंडल चार्ट बनाना)
+    fig.add_trace(
+        go.Candlestick(
+            x=chart_df.index,
+            open=chart_df["Open"],
+            high=chart_df["High"],
+            low=chart_df["Low"],
+            close=chart_df["Close"],
+            name="Price"
+        )
+    )
 
-            fig.add_trace(
-                go.Scatter(
-                    x=chart_df.index,
-                    y=chart_df["Close"],
-                    mode="lines",
-                    line=dict(color=line_color, width=2),
-                    fill="tonexty",
-                    fillcolor=fill_color,
-                    showlegend=False,
-                    hovertemplate=hover_tpl,
-                )
+    # 2. SMA 20 Indicator (नारंगी लाइन) जोड़ना
+    if len(chart_df) >= 20:
+        sma20 = chart_df["Close"].rolling(window=20).mean()
+        fig.add_trace(
+            go.Scatter(
+                x=chart_df.index,
+                y=sma20,
+                mode="lines",
+                line=dict(color="orange", width=1.5),
+                name="SMA 20"
             )
+        )
+
+    # 3. SMA 50 Indicator (नीली लाइन) जोड़ना
+    if len(chart_df) >= 50:
+        sma50 = chart_df["Close"].rolling(window=50).mean()
+        fig.add_trace(
+            go.Scatter(
+                x=chart_df.index,
+                y=sma50,
+                mode="lines",
+                line=dict(color="#2196f3", width=1.5),
+                name="SMA 50"
+            )
+        )
+
+    # 4. नीचे का स्लाइडर छुपाएं (ताकि मोबाइल पर साफ दिखे)
+    fig.update_layout(xaxis_rangeslider_visible=False)
+    
 
             # Pad y-axis 5% above and below the data range
             y_min = float(chart_df["Close"].min())
