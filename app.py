@@ -612,7 +612,7 @@ def render_stock_overview(symbol: str):
         with st.spinner("Loading chart..."):
             chart_df = _fetch_chart_data(symbol, selected_period)
 
-        if not chart_df.empty:
+     if not chart_df.empty:
         line_color = "#00C851" if change >= 0 else "#ff4444"
         fill_color = "rgba(0,200,81,0.10)" if change >= 0 else "rgba(255,68,68,0.10)"
         is_intraday = selected_period in ("1D", "1W", "1M")
