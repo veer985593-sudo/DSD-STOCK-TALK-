@@ -9,15 +9,13 @@ from datetime import datetime
 import pandas as pd
 import plotly.graph_objects as go
 import yfinance as yf
-
-# Must be first Streamlit command
 st.set_page_config(
     page_title="DSD STOCK TALK™",
-
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
 
 # Import tools after streamlit config
 from tools.market_data import get_stock_price, get_stock_info, get_historical_data, get_index_data, get_trending_stocks
