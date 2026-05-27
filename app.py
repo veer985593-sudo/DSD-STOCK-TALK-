@@ -1,196 +1,514 @@
+"""
+Streamlit Web UI for Stock Research Assistant
+Beautiful dashboard for Indian stock market analysis
+"""
+import html as html_module
 import streamlit as st
-import yfinance as yf
-import pandas as pd
-import plotly.graph_objects as gr
-from plotly.subplots import make_subplots
-import numpy as np
+import json
 from datetime import datetime
+import pandas as pd
+import plotly.graph_objects as go
+import yfinance as yf
 
-# 1. Page Configuration
+# Must be first Streamlit command
 st.set_page_config(
     page_title="DSD STOCK TALK™",
+
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-# Custom Style for Premium Look
+# Import tools after streamlit config
+from tools.market_data import get_stock_price, get_stock_info, get_historical_data, get_index_data, get_trending_stocks
+from tools.news_scraper import get_stock_news
+from tools.analysis import calculate_technical_indicators, get_fundamental_metrics, analyze_price_action
+from tools.institutional import get_fii_dii_data, get_bulk_block_deals
+from config import NIFTY50_STOCKS, SECTORS
+
+
+# Custom CSS
 st.markdown("""
-    <style>
-    .main-title { font-size:36px !important; font-weight: bold; color: #1E3A8A; text-align: center; margin-bottom: 20px; }
-    .section-title { font-size:24px !important; font-weight: bold; color: #0F172A; border-bottom: 2px solid #3B82F6; padding-bottom: 5px; margin-top: 20px; }
-    .metric-box { padding: 15px; background-color: #F8FAFC; border-radius: 10px; border: 1px solid #E2E8F0; text-align: center; }
-    </style>
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        font-weight: bold;
+        background: linear-gradient(90deg, #FF9933, #FFFFFF, #138808);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        padding: 1rem;
+    }
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem;
+        border-radius: 10px;
+        color: white;
+    }
+    .positive { color: #00C851; font-weight: bold; }
+    .negative { color: #ff4444; font-weight: bold; }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        padding: 10px 20px;
+        border-radius: 5px;
+    }
+    .report-box {
+        background-color: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 2rem 2.5rem;
+        margin: 1rem 0;
+        line-height: 1.7;
+    }
+    .report-box h1 { font-size: 1.6rem; margin-top: 0; }
+    .report-box h2 { font-size: 1.3rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.4rem; }
+    .report-box h3 { font-size: 1.1rem; }
+    .report-box hr { border-color: rgba(255,255,255,0.08); }
+</style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">DSD STOCK TALK™ - Advanced Analytics Dashboard</div>', unsafe_allow_html=True)
 
-# -------------------------------------------------------------------
-# FUNCTON 1: FII / DII Data Fetcher
-# -------------------------------------------------------------------
-@st.cache_data(ttl=3600)
-def fetch_fii_dii_data():
-    # Fallback Data (Streamlit Cloud IPs often get blocked by NSE/Moneycontrol)
-    current_date = datetime.now().strftime('%d-%b-%Y')
-    fallback_data = {
-        'Category': ['FII Cash', 'DII Cash', 'FII Index Fut', 'FII Index Opt'],
-        'Date': [current_date, current_date, current_date, current_date],
-        'Buy Value (Cr)': [8450.25, 9120.40, 3210.15, 145200.80],
-        'Sell Value (Cr)': [7120.10, 7450.20, 2890.40, 142100.30],
-        'Net Value (Cr)': [1330.15, 1670.20, 319.75, 3100.50]
-    }
-    return pd.DataFrame(fallback_data)
+def format_number(num):
+    """Format number in Indian style (lakhs, crores)."""
+    if num is None or num == "N/A":
+        return "N/A"
+    try:
+        num = float(num)
+        if num >= 10_000_000:
+            return f"₹{num/10_000_000:.2f} Cr"
+        elif num >= 100_000:
+            return f"₹{num/100_000:.2f} L"
+        else:
+            return f"₹{num:,.2f}"
+    except (ValueError, TypeError):
+        return str(num)
 
-# -------------------------------------------------------------------
-# FUNCTION 2: Recent Stock Results (Highlighted Good/Bad)
-# -------------------------------------------------------------------
-def get_recent_results():
-    results_data = [
-        {"Stock": "RELIANCE.NS", "Period": "Q4", "Net Profit Change": "+12.5%", "Verdict": "Good", "Icon": "👍 Green"},
-        {"Stock": "TCS.NS", "Period": "Q4", "Net Profit Change": "+8.2%", "Verdict": "Good", "Icon": "👍 Green"},
-        {"Stock": "INFY.NS", "Period": "Q4", "Net Profit Change": "-3.4%", "Verdict": "Bad", "Icon": "👎 Red"},
-        {"Stock": "HDFCBANK.NS", "Period": "Q4", "Net Profit Change": "+16.1%", "Verdict": "Good", "Icon": "👍 Green"},
-        {"Stock": "ICICIBANK.NS", "Period": "Q4", "Net Profit Change": "+14.5%", "Verdict": "Good", "Icon": "👍 Green"},
-        {"Stock": "WIPRO.NS", "Period": "Q4", "Net Profit Change": "-5.6%", "Verdict": "Bad", "Icon": "👎 Red"},
-        {"Stock": "AXISBANK.NS", "Period": "Q4", "Net Profit Change": "+9.8%", "Verdict": "Good", "Icon": "👍 Green"}
-    ]
-    return pd.DataFrame(results_data)
 
-# -------------------------------------------------------------------
-# SIDEBAR CONTROLS
-# -------------------------------------------------------------------
-st.sidebar.header("DSD STOCK TALK™ Controls")
-ticker = st.sidebar.text_input("Enter NSE Ticker (e.g. RELIANCE.NS)", value="RELIANCE.NS")
-period = st.sidebar.selectbox("Select Time Period", options=["3mo", "6mo", "1y", "2y", "5y"], index=2)
-interval = st.sidebar.selectbox("Select Candle Interval", options=["1d", "1wk", "1mo"], index=0)
+def get_trend_emoji(change):
+    """Get emoji based on price change."""
+    if change > 0:
+        return "🟢"
+    elif change < 0:
+        return "🔴"
+    return "⚪"
 
-st.sidebar.subheader("Technical Indicators Overlay")
-show_sma20 = st.sidebar.checkbox("SMA 20 (Short Term Moving Average)", value=True)
-show_sma50 = st.sidebar.checkbox("SMA 50 (Medium Term Moving Average)", value=False)
-show_ema200 = st.sidebar.checkbox("EMA 200 (Long Term Trend Line)", value=False)
-show_bb = st.sidebar.checkbox("Bollinger Bands (20, 2)", value=False)
 
-st.sidebar.subheader("Subplot Indicators")
-show_rsi = st.sidebar.checkbox("Show RSI (Relative Strength Index)", value=True)
-show_macd = st.sidebar.checkbox("Show MACD (Trend Momentum)", value=True)
+def _safe_val(value, prefix="", suffix=""):
+    """Safely format a value for reports, handling None and N/A."""
+    if value is None or value == "N/A":
+        return "N/A"
+    return f"{prefix}{value}{suffix}"
 
-# -------------------------------------------------------------------
-# DASHBOARD LAYOUT: ROW 1
-# -------------------------------------------------------------------
-col_fii, col_res = st.columns([3, 2])
 
-with col_fii:
-    st.markdown('<div class="section-title">🏦 FII / DII Institutional Activity (Net Flows)</div>', unsafe_allow_html=True)
-    fii_df = fetch_fii_dii_data()  # FIXED FUNCTION CALL
-    st.dataframe(fii_df, use_container_width=True, hide_index=True)
-    st.caption("डेटा Cr. (करोड़) में है। पॉज़िटिव वैल्यू यानी खरीदारी, नेगेटिव वैल्यू यानी बिकवाली।")
+def _clean_report_markdown(report: str) -> str:
+    """Clean up LLM-generated report for proper Streamlit rendering.
 
-with col_res:
-    st.markdown('<div class="section-title">📢 Latest Stock Results Highlighted</div>', unsafe_allow_html=True)
-    res_df = get_recent_results()
+    Strips wrapping code fences that cause st.markdown to render
+    the entire report as a monospace code block.
+    """
+    import re
+    text = report.strip()
+    # Remove wrapping ```markdown ... ``` or ``` ... ```
+    text = re.sub(r'^```(?:markdown)?\s*\n', '', text)
+    text = re.sub(r'\n```\s*$', '', text)
+    return text.strip()
+
+
+def generate_report_text(symbol: str, report_type: str, data: dict) -> str:
+    """Generate a downloadable text report from analysis data."""
+    if not data or not isinstance(data, dict):
+        return f"Report for {symbol}: No data available."
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S IST")
+
+    if report_type == "technical":
+        ma = data.get("moving_averages", {})
+        momentum = data.get("momentum", {})
+        volatility = data.get("volatility", {})
+        sr = data.get("support_resistance", {})
+        trend = data.get("trend", {})
+        signals = data.get("signals", [])
+        
+        report = f"""
+================================================================================
+                    TECHNICAL ANALYSIS REPORT - {symbol}
+================================================================================
+Generated: {timestamp}
+Source: Stock Research Assistant
+
+OVERALL SIGNAL: {data.get('overall_signal', 'N/A')}
+Signal Strength: {data.get('signal_strength', 'N/A')}
+
+--------------------------------------------------------------------------------
+MOVING AVERAGES
+--------------------------------------------------------------------------------
+SMA 20:  ₹{ma.get('sma_20', 'N/A')}
+SMA 50:  ₹{ma.get('sma_50', 'N/A')}
+SMA 200: ₹{ma.get('sma_200', 'N/A')}
+Price vs SMA20: {ma.get('price_vs_sma20', 'N/A')}
+Price vs SMA50: {ma.get('price_vs_sma50', 'N/A')}
+
+--------------------------------------------------------------------------------
+MOMENTUM INDICATORS
+--------------------------------------------------------------------------------
+RSI (14):        {momentum.get('rsi_14', 'N/A')} - {momentum.get('rsi_interpretation', 'N/A')}
+MACD Line:       {momentum.get('macd_line', 'N/A')}
+MACD Signal:     {momentum.get('macd_signal', 'N/A')}
+Rate of Change:  {momentum.get('roc_10_day', 'N/A')}%
+
+--------------------------------------------------------------------------------
+VOLATILITY (BOLLINGER BANDS)
+--------------------------------------------------------------------------------
+Upper Band:  ₹{volatility.get('bollinger_upper', 'N/A')}
+Middle Band: ₹{volatility.get('bollinger_middle', 'N/A')}
+Lower Band:  ₹{volatility.get('bollinger_lower', 'N/A')}
+BB Position: {volatility.get('bb_position', 'N/A')}
+ATR %:       {volatility.get('atr_percent', 'N/A')}
+
+--------------------------------------------------------------------------------
+SUPPORT & RESISTANCE LEVELS
+--------------------------------------------------------------------------------
+Resistance 2: ₹{sr.get('resistance_2', 'N/A')}
+Resistance 1: ₹{sr.get('resistance_1', 'N/A')}
+Pivot:        ₹{sr.get('pivot', 'N/A')}
+Support 1:    ₹{sr.get('support_1', 'N/A')}
+Support 2:    ₹{sr.get('support_2', 'N/A')}
+
+--------------------------------------------------------------------------------
+TREND ANALYSIS
+--------------------------------------------------------------------------------
+Short-term:  {trend.get('short_term', 'N/A')}
+Medium-term: {trend.get('medium_term', 'N/A')}
+Long-term:   {trend.get('long_term', 'N/A')}
+Golden Cross Active: {trend.get('golden_cross', 'N/A')}
+
+--------------------------------------------------------------------------------
+ACTIVE SIGNALS
+--------------------------------------------------------------------------------
+"""
+        for sig in signals:
+            report += f"- {sig.get('indicator', '')}: {sig.get('signal', '')} ({sig.get('strength', '')})\n"
+        
+        report += """
+================================================================================
+DISCLAIMER: This report is for educational purposes only. Not financial advice.
+================================================================================
+"""
+        return report
     
-    def style_verdict(val):
-        color = '#D1FAE5' if val == 'Good' else '#FEE2E2'
-        text_color = '#065F46' if val == 'Good' else '#991B1B'
-        return f'background-color: {color}; color: {text_color}; font-weight: bold;'
+    elif report_type == "fundamental":
+        valuation = data.get("valuation") or {}
+        profitability = data.get("profitability") or {}
+        leverage = data.get("financial_health") or data.get("leverage") or {}
+        growth = data.get("growth") or {}
+        dividends = data.get("dividends") or {}
+        size = data.get("size") or {}
+        assessment = data.get("assessment") or []
+        
+        report = f"""
+================================================================================
+                   FUNDAMENTAL ANALYSIS REPORT - {symbol}
+================================================================================
+Generated: {timestamp}
+Source: Stock Research Assistant
+
+OVERALL RATING: {data.get('overall_rating', 'N/A')}
+Valuation Status: {data.get('valuation_status', 'N/A')}
+
+--------------------------------------------------------------------------------
+VALUATION METRICS
+--------------------------------------------------------------------------------
+P/E Ratio:     {valuation.get('pe_ratio', 'N/A')}
+P/B Ratio:     {valuation.get('pb_ratio', 'N/A')}
+EV/EBITDA:     {valuation.get('ev_ebitda', 'N/A')}
+Forward P/E:   {valuation.get('forward_pe', 'N/A')}
+PEG Ratio:     {valuation.get('peg_ratio', 'N/A')}
+
+--------------------------------------------------------------------------------
+PROFITABILITY
+--------------------------------------------------------------------------------
+ROE:           {profitability.get('roe', 'N/A')}
+ROA:           {profitability.get('roa', 'N/A')}
+Gross Margin:  {profitability.get('gross_margin', 'N/A')}
+Profit Margin: {profitability.get('profit_margin', 'N/A')}
+Operating Margin: {profitability.get('operating_margin', 'N/A')}
+
+--------------------------------------------------------------------------------
+LEVERAGE & LIQUIDITY
+--------------------------------------------------------------------------------
+Debt/Equity:    {leverage.get('debt_to_equity', 'N/A')}
+Current Ratio:  {leverage.get('current_ratio', 'N/A')}
+Quick Ratio:    {leverage.get('quick_ratio', 'N/A')}
+
+--------------------------------------------------------------------------------
+GROWTH METRICS
+--------------------------------------------------------------------------------
+Earnings Growth:   {growth.get('earnings_growth', 'N/A')}
+Revenue Growth:    {growth.get('revenue_growth', 'N/A')}
+Quarterly EPS Growth: {growth.get('quarterly_earnings_growth', 'N/A')}
+
+--------------------------------------------------------------------------------
+DIVIDENDS
+--------------------------------------------------------------------------------
+Dividend Yield: {dividends.get('dividend_yield', 'N/A')}
+Dividend Rate:  {dividends.get('dividend_rate', 'N/A')}
+Payout Ratio:   {dividends.get('payout_ratio', 'N/A')}
+
+--------------------------------------------------------------------------------
+COMPANY SIZE
+--------------------------------------------------------------------------------
+Market Cap:       {size.get('market_cap', 'N/A')}
+Enterprise Value: {size.get('enterprise_value', 'N/A')}
+Revenue:          {size.get('revenue', 'N/A')}
+EBITDA:           {size.get('ebitda', 'N/A')}
+
+--------------------------------------------------------------------------------
+KEY OBSERVATIONS
+--------------------------------------------------------------------------------
+"""
+        for item in assessment:
+            report += f"- {item.get('metric', '')}: {item.get('assessment', '')} [{item.get('impact', '')}]\n"
+        
+        report += """
+================================================================================
+DISCLAIMER: This report is for educational purposes only. Not financial advice.
+================================================================================
+"""
+        return report
     
-    styled_res = res_df.style.map(style_verdict, subset=['Verdict']) # FIXED PANDAS METHOD
-    st.dataframe(styled_res, use_container_width=True, hide_index=True)
+    return "Report not available"
 
-# -------------------------------------------------------------------
-# DASHBOARD LAYOUT: ROW 2 (Candlestick Chart)
-# -------------------------------------------------------------------
-st.markdown(f'<div class="section-title">📈 {ticker} Technical Japanese Candlestick Chart</div>', unsafe_allow_html=True)
 
-try:
-    stock = yf.Ticker(ticker)
-    df = stock.history(period=period, interval=interval)
-    
-    if not df.empty:
-        df['SMA20'] = df['Close'].rolling(window=20).mean()
-        df['SMA50'] = df['Close'].rolling(window=50).mean()
-        df['EMA200'] = df['Close'].ewm(span=200, adjust=False).mean()
-        
-        # FIXED BOLLINGER BANDS SYNTAX
-        df['BB_middle'] = df['Close'].rolling(window=20).mean()
-        df['BB_std'] = df['Close'].rolling(window=20).std()
-        df['BB_upper'] = df['BB_middle'] + (df['BB_std'] * 2)
-        df['BB_lower'] = df['BB_middle'] - (df['BB_std'] * 2)
-        
-        delta = df['Close'].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-        rs = gain / (loss + 1e-10)
-        df['RSI'] = 100 - (100 / (1 + rs))
-        
-        df['EMA12'] = df['Close'].ewm(span=12, adjust=False).mean()
-        df['EMA26'] = df['Close'].ewm(span=26, adjust=False).mean()
-        df['MACD'] = df['EMA12'] - df['EMA26']
-        df['MACD_Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
-        df['MACD_Hist'] = df['MACD'] - df['MACD_Signal']
+def render_header():
+    """Render the main header."""
+    st.markdown('<h1 class="main-header">🇮🇳 Stock Research Assistant</h1>', unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: gray;'>AI-Powered Research for Indian Markets (NSE/BSE)</p>", unsafe_allow_html=True)
+    st.divider()
 
-        rows = 1
-        if show_rsi: rows += 1
-        if show_macd: rows += 1
-        
-        row_heights = [0.6]
-        if show_rsi: row_heights.append(0.2)
-        if show_macd: row_heights.append(0.2)
-        
-        fig = make_subplots(rows=rows, cols=1, shared_xaxes=True, 
-                            vertical_spacing=0.03, row_heights=row_heights)
-        
-        fig.add_trace(gr.Candlestick(
-            x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'],
-            name="Candlestick", id="candles"
-        ), row=1, col=1)
-        
-        if show_sma20:
-            fig.add_trace(gr.Scatter(x=df.index, y=df['SMA20'], line=dict(color='orange', width=1.5), name='SMA 20'), row=1, col=1)
-        if show_sma50:
-            fig.add_trace(gr.Scatter(x=df.index, y=df['SMA50'], line=dict(color='blue', width=1.5), name='SMA 50'), row=1, col=1)
-        if show_ema200:
-            fig.add_trace(gr.Scatter(x=df.index, y=df['EMA200'], line=dict(color='purple', width=2), name='EMA 200'), row=1, col=1)
-        if show_bb:
-            fig.add_trace(gr.Scatter(x=df.index, y=df['BB_upper'], line=dict(color='gray', width=1, dash='dash'), name='BB Upper'), row=1, col=1)
-            fig.add_trace(gr.Scatter(x=df.index, y=df['BB_lower'], line=dict(color='gray', width=1, dash='dash'), name='BB Lower'), row=1, col=1)
 
-        current_row = 2
-        if show_rsi:
-            fig.add_trace(gr.Scatter(x=df.index, y=df['RSI'], line=dict(color='purple', width=1.5), name='RSI (14)'), row=current_row, col=1)
-            fig.add_hline(y=70, line_dash="dash", line_color="red", row=current_row, col=1)
-            fig.add_hline(y=30, line_dash="dash", line_color="green", row=current_row, col=1)
-            fig.update_yaxes(title_text="RSI", range=[10, 90], row=current_row, col=1)
-            current_row += 1
-            
-        if show_macd:
-            fig.add_trace(gr.Scatter(x=df.index, y=df['MACD'], line=dict(color='blue', width=1.5), name='MACD'), row=current_row, col=1)
-            fig.add_trace(gr.Scatter(x=df.index, y=df['MACD_Signal'], line=dict(color='orange', width=1.5), name='Signal'), row=current_row, col=1)
-            
-            colors = ['#00C851' if val >= 0 else '#ff4444' for val in df['MACD_Hist']]
-            fig.add_trace(gr.Bar(x=df.index, y=df['MACD_Hist'], marker_color=colors, name='Hist'), row=current_row, col=1)
-            fig.update_yaxes(title_text="MACD", row=current_row, col=1)
+def render_sidebar():
+    """Render sidebar with stock selection."""
+    with st.sidebar:
+        st.image("https://upload.wikimedia.org/wikipedia/en/thumb/4/41/Flag_of_India.svg/1200px-Flag_of_India.svg.png", width=50)
+        st.title("📊 Navigation")
+        
+        # Stock input
+        st.subheader("🔍 Search Stock")
+        symbol = st.text_input(
+            "Enter Stock Symbol",
+            placeholder="e.g., RELIANCE, TCS, INFY",
+            help="Enter NSE stock symbol"
+        ).upper().strip()
+        
+        # Trending stocks
+        st.subheader("🔥 Trending Today")
+        trending = get_trending_stocks()
+        gainers = trending.get("gainers", [])
+        losers = trending.get("losers", [])
 
-        fig.update_layout(
-            height=700,
-            xaxis_rangeslider_visible=False,
-            margin=dict(l=10, r=10, t=20, b=10),
-            hovermode="x unified",
-            template="plotly_white"
+        if gainers or losers:
+            trend_tab1, trend_tab2 = st.tabs(["Top Gainers", "Top Losers"])
+
+            with trend_tab1:
+                for g in gainers[:5]:
+                    sym = g.get("symbol", "")
+                    chg = g.get("net_price", 0) or g.get("netPrice", 0)
+                    st.markdown(f"**{sym}** :green[+{chg}%]")
+                gainer_symbols = [g.get("symbol", "") for g in gainers[:5] if g.get("symbol")]
+                selected_gainer = st.selectbox(
+                    "Select gainer",
+                    [""] + gainer_symbols,
+                    format_func=lambda x: "Pick a stock..." if x == "" else x,
+                    key="gainer_select",
+                )
+                if selected_gainer:
+                    symbol = selected_gainer
+
+            with trend_tab2:
+                for ls in losers[:5]:
+                    sym = ls.get("symbol", "")
+                    chg = ls.get("net_price", 0) or ls.get("netPrice", 0)
+                    st.markdown(f"**{sym}** :red[{chg}%]")
+                loser_symbols = [ls.get("symbol", "") for ls in losers[:5] if ls.get("symbol")]
+                selected_loser = st.selectbox(
+                    "Select loser",
+                    [""] + loser_symbols,
+                    format_func=lambda x: "Pick a stock..." if x == "" else x,
+                    key="loser_select",
+                )
+                if selected_loser:
+                    symbol = selected_loser
+        else:
+            # Fallback to hardcoded list
+            st.subheader("⚡ Quick Select")
+            selected_stock = st.selectbox(
+                "Popular Stocks",
+                [""] + NIFTY50_STOCKS[:20],
+                format_func=lambda x: "Select a stock..." if x == "" else x,
+            )
+            if selected_stock:
+                symbol = selected_stock
+        
+        # Sector filter
+        st.subheader("🏭 Browse by Sector")
+        selected_sector = st.selectbox(
+            "Sector",
+            [""] + list(SECTORS.keys()),
+            format_func=lambda x: "All Sectors" if x == "" else x
         )
         
-        fig.update_xaxes(rangebreaks=[dict(bounds=["sat", "mon"])])
-        st.plotly_chart(fig, use_container_width=True)
+        if selected_sector:
+            sector_stocks = SECTORS.get(selected_sector, [])
+            sector_stock = st.selectbox("Stocks", [""] + sector_stocks)
+            if sector_stock:
+                symbol = sector_stock
         
-        st.markdown('<div class="section-title">📊 Key Financial Stock Snapshot</div>', unsafe_allow_html=True)
-        info = stock.info
-        c1, c2, c3, c4 = st.columns(4)
-        c1.markdown(f"<div class='metric-box'><b>Current Price</b><br>₹{info.get('currentPrice', 'N/A')}</div>", unsafe_allow_html=True)
-        c2.markdown(f"<div class='metric-box'><b>Trailing P/E Ratio</b><br>{info.get('trailingPE', 'N/A')}</div>", unsafe_allow_html=True)
-        c3.markdown(f"<div class='metric-box'><b>Market Cap (Cr)</b><br>₹{round(info.get('marketCap', 0)/10000000, 2) if info.get('marketCap') else 'N/A'}</div>", unsafe_allow_html=True)
-        c4.markdown(f"<div class='metric-box'><b>52 Week High</b><br>₹{info.get('fiftyTwoWeekHigh', 'N/A')}</div>", unsafe_allow_html=True)
+        st.divider()
+        
+        # Market status
+        now = datetime.now()
+        hour = now.hour
+        if now.weekday() >= 5:
+            status = "🔴 Market Closed (Weekend)"
+        elif hour < 9 or (hour == 9 and now.minute < 15):
+            status = "🟡 Pre-Market"
+        elif hour < 15 or (hour == 15 and now.minute <= 30):
+            status = "🟢 Market Open"
+        else:
+            status = "🔴 Market Closed"
+        
+        st.markdown(f"**Market Status:** {status}")
+        st.markdown(f"**Last Updated:** {now.strftime('%H:%M:%S IST')}")
+        
+        st.divider()
+        st.caption("⚠️ For educational purposes only. Not financial advice.")
+        
+        return symbol
 
-    else:
-        st.error("स्टॉक डेटा उपलब्ध नहीं है। कृपया सही NSE टिकर दर्ज करें (उदा. Reliance के लिए RELIANCE.NS)।")
-except Exception as err:
-    st.error(f"डेटा लोड करने में त्रुटि: {str(err)}")
+
+def render_market_overview():
+    """Render market overview section."""
+    st.subheader("🏦 Market Overview")
+    
+    try:
+        indices_data = json.loads(get_index_data.run("ALL"))
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        index_cols = [
+            ("NIFTY50", "NIFTY 50", col1),
+            ("SENSEX", "SENSEX", col2),
+            ("BANKNIFTY", "BANK NIFTY", col3),
+            ("NIFTYIT", "NIFTY IT", col4),
+        ]
+        
+        for key, name, col in index_cols:
+            if key in indices_data:
+                data = indices_data[key]
+                value = data.get("value", 0)
+                change = data.get("change", 0)
+                change_pct = data.get("change_percent", 0)
+                
+                with col:
+                    st.metric(
+                        label=name,
+                        value=f"{value:,.2f}",
+                        delta=f"{change:+,.2f} ({change_pct:+.2f}%)"
+                    )
+    except Exception as e:
+        st.warning(f"Could not fetch market data: {e}")
+
+
+def _fetch_chart_data(symbol: str, period: str) -> pd.DataFrame:
+    """Fetch OHLCV data from yfinance for charting.
+
+    Returns a DataFrame with a **timezone-naive IST** DatetimeIndex.
+    Intraday timestamps are shifted to interval-end so the last candle
+    of the day reads 3:30 PM (market close).
+    For 1D/1W the last candle's Close is patched with the official daily
+    closing price so the chart endpoint matches the header price.
+    """
+    from tools.market_data import _get_nse_symbol
+    from datetime import timedelta, time as dt_time
+
+    MARKET_CLOSE = dt_time(15, 30)
+
+    # (yfinance period, interval, timedelta to shift candle to end-of-interval)
+    period_map = {
+        "1D": ("5d", "5m", timedelta(minutes=5)),
+        "1W": ("5d", "5m", timedelta(minutes=5)),
+        "1M": ("1mo", "30m", timedelta(minutes=30)),
+        "3M": ("3mo", "1h", timedelta(hours=1)),
+        "6M": ("6mo", "1d", None),
+        "1Y": ("1y", "1d", None),
+        "5Y": ("5y", "1d", None),
+    }
+    yf_period, interval, shift = period_map.get(period, ("1y", "1d", None))
+
+    try:
+        ticker = yf.Ticker(_get_nse_symbol(symbol))
+        df = ticker.history(period=yf_period, interval=interval)
+
+        if df.empty:
+            return df
+
+        # Convert to naive IST (yfinance already returns Asia/Kolkata)
+        if df.index.tz is not None:
+            df.index = df.index.tz_convert("Asia/Kolkata").tz_localize(None)
+
+        # Shift intraday candles to interval-end timestamps,
+        # capping at 15:30 (market close) so the last bar is correct.
+        if shift is not None:
+            new_idx = df.index + shift
+            capped = []
+            for ts in new_idx:
+                if ts.time() > MARKET_CLOSE:
+                    ts = ts.replace(hour=15, minute=30, second=0, microsecond=0)
+                capped.append(ts)
+            df.index = pd.DatetimeIndex(capped)
+
+        # For 1D, keep only the most recent trading day
+        if period == "1D":
+            last_date = df.index[-1].date()
+            df = df[df.index.date == last_date]
+
+        # Patch the last candle of each intraday day with the official
+        # daily close so the chart endpoint matches the header price.
+        # (15-min candles miss the closing auction.)
+        if shift is not None:
+            try:
+                daily = ticker.history(period=yf_period, interval="1d")
+                if daily.index.tz is not None:
+                    daily.index = daily.index.tz_convert("Asia/Kolkata").tz_localize(None)
+                daily_close_map = {d.date(): row["Close"] for d, row in daily.iterrows()}
+                for i in range(len(df) - 1, -1, -1):
+                    ts = df.index[i]
+                    if ts.time() == MARKET_CLOSE:
+                        official = daily_close_map.get(ts.date())
+                        if official is not None:
+                            df.iloc[i, df.columns.get_loc("Close")] = official
+            except Exception:
+                pass  # best-effort; fall back to candle data
+
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+
+def _render_range_bar(label: str, low: float, high: float, current: float):
+    """Render a horizontal range bar with a triangle marker via HTML/CSS."""
+    if high <= low or high == 0:
+        return
+
+    pct = max(0, min(100, ((current - low) / (high - low)) * 100))
+
+    html = f"""
+    <div style="margin: 0.6rem 0;">
+      <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:#aaa; margin-bottom:2px;">
+        <span>{label} Low — ₹{low:,.2f}</span>
+        <span>₹{high:,.2f} — {label} High</span>
+      </div>
+      <div style="position:relative; height:6px; background:linear-gradient(90deg,#ff4444 0%,#ffcc00 50%,#00C851 100%); border-radius:3px;">
+        <div style="position:absol
