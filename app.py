@@ -511,4 +511,26 @@ def _render_range_bar(label: str, low: float, high: float, current: float):
         <span>₹{high:,.2f} — {label} High</span>
       </div>
       <div style="position:relative; height:6px; background:linear-gradient(90deg,#ff4444 0%,#ffcc00 50%,#00C851 100%); border-radius:3px;">
-        <div style="position:absol
+        def _render_range_bar(label: str, low: float, high: float, current: float):
+    """Render a horizontal range bar with a triangle marker via HTML/CSS."""
+    if high <= low or high == 0:
+        return
+
+    pct = max(0, min(100, ((current - low) / (high - low)) * 100))
+
+    html = f"""
+    <div style="margin: 0.6rem 0; width: 100%;">
+      <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:#aaa; margin-bottom:4px;">
+        <span>{label} Low — ₹{low:,.2f}</span>
+        <span>₹{high:,.2f} — {label} High</span>
+      </div>
+      <div style="position:relative; height:6px; background:linear-gradient(90deg,#ff4444 0%,#ffcc00 50%,#00C851 100%); border-radius:3px; width:100%;">
+        <div style="position:absolute; left:calc({pct}% - 6px); top:-3px; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:12px solid #fff;"></div>
+      </div>
+      <div style="text-align:center; font-size:0.85rem; color:#fff; margin-top:4px;">
+        Current: <b>₹{current:,.2f}</b>
+      </div>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+    
