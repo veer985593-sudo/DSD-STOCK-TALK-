@@ -551,12 +551,29 @@ def render_stock_overview(symbol: str):
             """,
             unsafe_allow_html=True,
         )
-        # --- 🚨 AUTOMATIC ALERT FEATURE 🚨 ---
-        if change >= 0:
-            st.success(f"🟢 🚨 STRONG TREND: {symbol} का मोमेंटम आज मजबूत है! (+{change_pct}%) 🚨 🟢")
-        else:
-            st.error(f"🔴 🚨 WEAK TREND: {symbol} का मोमेंटम आज कमजोर है! ({change_pct}%) 🚨 🔴")
+                # --- 🚨 YESTERDAY HIGH BREAKOUT ALERT 🚨 ---
+        try:
+            import yfinance as yf
+            _hist = yf.Ticker(f"{symbol}.NS").history(period="2d")
+            current_price = price_data.get("current_price", 0)
+            
+            if len(_hist) >= 2 and current_price > 0:
+                yesterday_high = _hist['High'].iloc[-2] # कल का High निकाल रहे हैं
+                
+                if current_price > yesterday_high:
+                    st.success(f"🟢 🚨 BREAKOUT: {symbol} कल के High (₹{yesterday_high:,.2f}) को तोड़कर ऊपर चल रहा है! 🚨 🟢")
+                else:
+                    st.error(f"🔴 🚨 NO BREAKOUT: {symbol} अभी कल के High (₹{yesterday_high:,.2f}) के नीचे है। 🚨 🔴")
+            else:
+                # बैकअप: अगर इंटरनेट स्लो हो और कल का हाई न मिले, तो पुराना प्लस/माइनस चेक करेगा
+                if change >= 0:
+                    st.success(f"🟢 🚨 STRONG TREND: {symbol} आज प्लस में है! (+{change_pct}%) 🚨 🟢")
+                else:
+                    st.error(f"🔴 🚨 WEAK TREND: {symbol} आज माइनस में है! ({change_pct}%) 🚨 🔴")
+        except Exception:
+            pass
         # ---------------------------------------------
+        
         
         # ── Section 2: Range bars ──
         day_low = price_data.get("low", 0)
