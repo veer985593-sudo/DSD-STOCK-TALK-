@@ -551,7 +551,13 @@ def render_stock_overview(symbol: str):
             """,
             unsafe_allow_html=True,
         )
-
+        # --- 🚨 AUTOMATIC ALERT FEATURE 🚨 ---
+        if change >= 0:
+            st.success(f"🟢 🚨 STRONG TREND: {symbol} का मोमेंटम आज मजबूत है! (+{change_pct}%) 🚨 🟢")
+        else:
+            st.error(f"🔴 🚨 WEAK TREND: {symbol} का मोमेंटम आज कमजोर है! ({change_pct}%) 🚨 🔴")
+        # ---------------------------------------------
+        
         # ── Section 2: Range bars ──
         day_low = price_data.get("low", 0)
         day_high = price_data.get("high", 0)
