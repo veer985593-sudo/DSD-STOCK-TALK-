@@ -283,7 +283,7 @@ DISCLAIMER: This report is for educational purposes only. Not financial advice.
 
 def render_header():
     """Render the main header."""
-    st.markdown('<h1 class="main-header">🇮🇳 Stock Research Assistant</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">📈 DSD STOCK MARKET</h1>', unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: gray;'>AI-Powered Research for Indian Markets (NSE/BSE)</p>", unsafe_allow_html=True)
     st.divider()
 
