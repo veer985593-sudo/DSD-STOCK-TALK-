@@ -9,7 +9,6 @@ from datetime import datetime
 import pandas as pd
 import plotly.graph_objects as go
 import yfinance as yf
-from streamlit_autorefresh import st_autorefresh
 
 # Must be first Streamlit command
 st.set_page_config(
