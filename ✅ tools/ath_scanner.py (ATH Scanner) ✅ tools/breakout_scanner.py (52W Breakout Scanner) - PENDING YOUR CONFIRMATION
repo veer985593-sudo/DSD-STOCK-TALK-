@@ -1,8 +1,0 @@
-# 1. ATH Scanner test karo
-uv run python -c "from tools.ath_scanner import scan_all_time_high; print(scan_all_time_high())"
-
-# 2. Breakout Scanner test karo
-uv run python -c "from tools.breakout_scanner import scan_52week_breakout; print(scan_52week_breakout())"
-
-# 3. Atomic List generate karo
-uv run python -c "from tools.ath_scanner import get_atomic_ath_list; print(get_atomic_ath_list())"
