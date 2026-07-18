@@ -213,11 +213,29 @@ def render_sidebar():
         st.markdown(f"**Market Status:** {status}")
         return symbol
 
-def render_market_overview():
-    st.subheader("🏦 Market Overview")
-    try:
-        indices_data = json.loads(get_index_data())
-        col1, col2, col3, col4 = st.columns(4)
+        with tab2:
+            st.subheader(f"📊 {symbol} Fundamentals")
+            try:
+                with st.spinner("Fetching fundamentals..."):
+                    info = yf.Ticker(f"{symbol}.NS").info
+                    
+                    f_col1, f_col2, f_col3 = st.columns(3)
+                    mcap = info.get('marketCap')
+                    f_col1.metric("Market Cap", f"₹{mcap/10000000:,.2f} Cr" if mcap else "N/A")
+                    f_col2.metric("P/E Ratio", round(info.get('trailingPE', 0), 2) if info.get('trailingPE') else "N/A")
+                    roe = info.get('returnOnEquity')
+                    f_col3.metric("ROE", f"{roe*100:.2f}%" if roe else "N/A")
+                    
+                    st.divider()
+                    
+                    f_col4, f_col5, f_col6 = st.columns(3)
+                    f_col4.metric("Book Value", f"₹{info.get('bookValue', 'N/A')}")
+                    f_col5.metric("Debt to Equity", info.get('debtToEquity', 'N/A'))
+                    div = info.get('dividendYield')
+                    f_col6.metric("Dividend Yield", f"{div*100:.2f}%" if div else "N/A")
+            except Exception:
+                st.warning("⚠️ इस स्टॉक का फंडामेंटल डेटा अभी उपलब्ध नहीं है।")
+
         index_cols = [("NIFTY50", "NIFTY 50", col1), ("SENSEX", "SENSEX", col2), ("BANKNIFTY", "BANK NIFTY", col3), ("NIFTYIT", "NIFTY IT", col4)]
         
         for key, name, col in index_cols:
