@@ -48,38 +48,20 @@ st.markdown("""
         padding: 10px 20px;
         border-radius: 5px;
     }
-    .report-box {
-        background-color: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 2rem 2.5rem;
-        margin: 1rem 0;
-        line-height: 1.7;
-    }
-    .report-box h1 { font-size: 1.6rem; margin-top: 0; }
-    .report-box h2 { font-size: 1.3rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.4rem; }
-    .report-box h3 { font-size: 1.1rem; }
-    .report-box hr { border-color: rgba(255,255,255,0.08); }
 </style>
 """, unsafe_allow_html=True)
 
-# Mock/Import placeholders for foundational configurations
-NIFTY50_STOCKS = ["RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "BHARTIARTL", "SBIN", "LICI", "ITC", "HINDUNILVR"]
-SECTORS = {
-    "IT": ["TCS", "INFY", "WIPRO", "HCLTECH"],
-    "Banking": ["HDFCBANK", "ICICIBANK", "SBIN", "AXISBANK"],
-    "Energy": ["RELIANCE", "ONGC", "NTPC"]
-}
-
-# --- 🚀 52-Week High Scanner (With Volume) ---
-@st.cache_data(ttl=86400) # हर 24 घंटे में सिर्फ एक बार अपडेट होगा (Safe for API)
+# --- 🚀 52-WEEK HIGH STRICT SCANNER ---
+@st.cache_data(ttl=86400) # 24 घंटे में सिर्फ एक बार डेटा मंगाएगा
 def scan_52w_high_stocks():
     nifty_stocks = [
         "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS", 
         "SBIN.NS", "BHARTIARTL.NS", "ITC.NS", "LT.NS", "BAJFINANCE.NS",
         "AXISBANK.NS", "KOTAKBANK.NS", "MARUTI.NS", "SUNPHARMA.NS", "TATAMOTORS.NS",
-        "M&M.NS", "ASIANPAINT.NS", "TITAN.NS", "HAL.NS", "ZOMATO.NS", "TRENT.NS", "ADANIENT.NS"
+        "M&M.NS", "ASIANPAINT.NS", "TITAN.NS", "HAL.NS", "ZOMATO.NS", "TRENT.NS",
+        "ADANIENT.NS", "NTPC.NS", "POWERGRID.NS", "ULTRACEMCO.NS", "WIPRO.NS"
     ]
+    
     breakout_list = []
     try:
         data = yf.download(nifty_stocks, period="1y", progress=False)
@@ -87,26 +69,17 @@ def scan_52w_high_stocks():
             for stock in nifty_stocks:
                 try:
                     close_prices = data['Close'][stock].dropna()
-                    volumes = data['Volume'][stock].dropna()
-                    
-                    if len(close_prices) > 200:
+                    if len(close_prices) > 200: 
                         current_price = close_prices.iloc[-1]
                         year_high = close_prices.max()
                         
-                        # अगर स्टॉक 52W High के 3% के अंदर है (ताकि कोई अच्छा स्टॉक मिस न हो)
-                        if current_price >= (year_high * 0.97): 
-                            current_vol = volumes.iloc[-1]
-                            avg_vol_20 = volumes.tail(20).mean()
-                            
-                            # Volume चेक: अगर आज का वॉल्यूम 20-दिन के एवरेज से 50% ज़्यादा है, तो असली ब्रेकआउट
-                            vol_status = "🔥 High Volume" if current_vol > (avg_vol_20 * 1.5) else "📊 Normal"
-                            
+                        # सिर्फ वही स्टॉक्स जो 52-Week High के 2% के अंदर हैं
+                        if current_price >= (year_high * 0.98): 
                             breakout_list.append({
                                 "Symbol": stock.replace(".NS", ""),
-                                "Price": f"₹{current_price:,.2f}",
+                                "Current Price": f"₹{current_price:,.2f}",
                                 "52W High": f"₹{year_high:,.2f}",
-                                "Distance": f"{((current_price/year_high)-1)*100:.1f}%",
-                                "Volume Trend": vol_status
+                                "Status": "🔥 52W High Breakout"
                             })
                 except Exception:
                     continue
@@ -114,52 +87,22 @@ def scan_52w_high_stocks():
         pass
     return pd.DataFrame(breakout_list)
 
-# --- Mock/Fallback Functions for Interface Binding ---
+# --- Fallback Functions ---
 def get_trending_stocks():
     return {"gainers": [{"symbol": "RELIANCE", "net_price": 2.4}], "losers": [{"symbol": "TCS", "net_price": -1.8}]}
 
 def get_index_data():
     return json.dumps({
-        "NIFTY50": {"value": 22450.30, "change": 120.4, "change_percent": 0.54},
-        "SENSEX": {"value": 73900.50, "change": 410.2, "change_percent": 0.56},
-        "BANKNIFTY": {"value": 47800.10, "change": -50.3, "change_percent": -0.10},
-        "NIFTYIT": {"value": 35200.80, "change": 280.9, "change_percent": 0.80}
+        "NIFTY50": {"value": 24330.30, "change": 261.55, "change_percent": 1.05},
+        "SENSEX": {"value": 78150.50, "change": 964.59, "change_percent": 1.25},
+        "BANKNIFTY": {"value": 58520.10, "change": 939.15, "change_percent": 1.60},
+        "NIFTYIT": {"value": 29220.80, "change": 504.00, "change_percent": 1.75}
     })
-
-def format_number(num):
-    if num is None or num == "N/A":
-        return "N/A"
-    try:
-        num = float(num)
-        if num >= 10_000_000:
-            return f"₹{num/10_000_000:.2f} Cr"
-        elif num >= 100_000:
-            return f"₹{num/100_000:.2f} L"
-        else:
-            return f"₹{num:,.2f}"
-    except (ValueError, TypeError):
-        return str(num)
-
-def get_trend_emoji(change):
-    if change > 0: return "🟢"
-    elif change < 0: return "🔴"
-    return "⚪"
-
-def _safe_val(value, prefix="", suffix=""):
-    if value is None or value == "N/A": return "N/A"
-    return f"{prefix}{value}{suffix}"
-
-def _clean_report_markdown(report: str) -> str:
-    text = report.strip()
-    text = re.sub(r'^```(?:markdown)?\s*\n', '', text)
-    text = re.sub(r'\n```\s*$', '', text)
-    return text.strip()
 
 def _render_range_bar(label: str, low: float, high: float, current: float):
     if high <= low or high == 0:
         return
     pct = max(0, min(100, ((current - low) / (high - low)) * 100))
-    
     html_content = f"""
     <div style="margin: 0.8rem 0; width: 100%;">
       <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:#aaa; margin-bottom:4px;">
@@ -187,7 +130,7 @@ def render_sidebar():
         st.title("📊 Navigation")
         
         st.subheader("🔍 Search Stock")
-        symbol = st.text_input("Enter Stock Symbol", value="RELIANCE", placeholder="e.g., RELIANCE, TCS, INFY").upper().strip()
+        symbol = st.text_input("Enter Stock Symbol", value="RELIANCE", placeholder="e.g., RELIANCE, TCS").upper().strip()
         
         # --- 🔄 REFRESH BUTTON ---
         if st.button("🔄 Refresh Live Data", use_container_width=True):
@@ -213,29 +156,11 @@ def render_sidebar():
         st.markdown(f"**Market Status:** {status}")
         return symbol
 
-        with tab2:
-            st.subheader(f"📊 {symbol} Fundamentals")
-            try:
-                with st.spinner("Fetching fundamentals..."):
-                    info = yf.Ticker(f"{symbol}.NS").info
-                    
-                    f_col1, f_col2, f_col3 = st.columns(3)
-                    mcap = info.get('marketCap')
-                    f_col1.metric("Market Cap", f"₹{mcap/10000000:,.2f} Cr" if mcap else "N/A")
-                    f_col2.metric("P/E Ratio", round(info.get('trailingPE', 0), 2) if info.get('trailingPE') else "N/A")
-                    roe = info.get('returnOnEquity')
-                    f_col3.metric("ROE", f"{roe*100:.2f}%" if roe else "N/A")
-                    
-                    st.divider()
-                    
-                    f_col4, f_col5, f_col6 = st.columns(3)
-                    f_col4.metric("Book Value", f"₹{info.get('bookValue', 'N/A')}")
-                    f_col5.metric("Debt to Equity", info.get('debtToEquity', 'N/A'))
-                    div = info.get('dividendYield')
-                    f_col6.metric("Dividend Yield", f"{div*100:.2f}%" if div else "N/A")
-            except Exception:
-                st.warning("⚠️ इस स्टॉक का फंडामेंटल डेटा अभी उपलब्ध नहीं है।")
-
+def render_market_overview():
+    st.subheader("🏦 Market Overview")
+    try:
+        indices_data = json.loads(get_index_data())
+        col1, col2, col3, col4 = st.columns(4)
         index_cols = [("NIFTY50", "NIFTY 50", col1), ("SENSEX", "SENSEX", col2), ("BANKNIFTY", "BANK NIFTY", col3), ("NIFTYIT", "NIFTY IT", col4)]
         
         for key, name, col in index_cols:
@@ -245,7 +170,7 @@ def render_sidebar():
     except Exception as e:
         st.warning(f"Could not fetch market data: {e}")
 
-def _fetch_chart_data(symbol: str, period: str) -> pd.DataFrame:
+def _fetch_chart_data(symbol: str) -> pd.DataFrame:
     try:
         ticker = yf.Ticker(f"{symbol}.NS")
         df = ticker.history(period="1mo", interval="1d")
@@ -276,7 +201,6 @@ def render_dashboard():
                     st.error(f"🔴 🚨 NO BREAKOUT: {symbol} अभी कल के High (₹{yesterday_high:,.2f}) के नीचे है। (Current: ₹{current_price:,.2f}) 🚨 🔴")
         except Exception:
             pass
-        # ---------------------------------------------
 
         col1, col2 = st.columns(2)
         with col1:
@@ -291,34 +215,59 @@ def render_dashboard():
             _render_range_bar("52W", 2100.00, 3100.00, 2495.50)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # Tab layouts
-        tab1, tab2, tab3, tab4 = st.tabs(["Technical Analysis", "Fundamental Data", "Institutional Activity", "🚀 52W High Scanner"])
+        # Tabs for detailed data
+        tab1, tab2, tab3 = st.tabs(["Technical Analysis", "Fundamental Data", "Institutional Activity"])
         
         with tab1:
-            st.write("Technical indicators configuration dashboard view.")
-            df = _fetch_chart_data(symbol, "1M")
+            df = _fetch_chart_data(symbol)
             if not df.empty:
                 fig = go.Figure(data=[go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'])])
-                fig.update_layout(title=f"{symbol} Stock Movement", template="plotly_dark")
+                fig.update_layout(title=f"{symbol} 1-Month Candlestick Chart", template="plotly_dark")
                 st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.write("Chart data not available.")
                 
         with tab2:
-            st.write("Fundamental Metrics Overview section.")
-            
+            st.subheader(f"📊 {symbol} Fundamentals")
+            try:
+                with st.spinner("Fetching live fundamentals..."):
+                    info = yf.Ticker(f"{symbol}.NS").info
+                    
+                    f_col1, f_col2, f_col3 = st.columns(3)
+                    mcap = info.get('marketCap')
+                    f_col1.metric("Market Cap", f"₹{mcap/10000000:,.2f} Cr" if mcap else "N/A")
+                    f_col2.metric("P/E Ratio", round(info.get('trailingPE', 0), 2) if info.get('trailingPE') else "N/A")
+                    roe = info.get('returnOnEquity')
+                    f_col3.metric("ROE", f"{roe*100:.2f}%" if roe else "N/A")
+                    
+                    st.divider()
+                    
+                    f_col4, f_col5, f_col6 = st.columns(3)
+                    f_col4.metric("Book Value", f"₹{info.get('bookValue', 'N/A')}")
+                    f_col5.metric("Debt to Equity", info.get('debtToEquity', 'N/A'))
+                    div = info.get('dividendYield')
+                    f_col6.metric("Dividend Yield", f"{div*100:.2f}%" if div else "N/A")
+            except Exception:
+                st.warning("⚠️ इस स्टॉक का फंडामेंटल डेटा अभी उपलब्ध नहीं है।")
+                
         with tab3:
-            st.write("FII / DII Historical Activity Track.")
+            st.write("FII / DII Historical Activity Track (Data to be integrated).")
             
-        with tab4:
-            st.subheader("🔥 52-Week High Breakout Scanner (With Volume)")
-            st.markdown("यह लिस्ट हर 24 घंटे में **ऑटोमैटिक अपडेट** होती है। इसमें वे स्टॉक्स हैं जो अपने 1 साल के उच्चतम स्तर (High) के बेहद करीब हैं और वॉल्यूम के साथ ब्रेकआउट दे रहे हैं।")
+        st.divider()
+        
+        # --- 🔥 52-Week High Scanner Section ---
+        with st.expander("🔥 DSD 52-Week High Radar (Auto-Scanner)", expanded=True):
+            st.markdown("इस लिस्ट में **सिर्फ वही** स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर (High) पर हैं। बाकी स्टॉक्स फिल्टर कर दिए गए हैं।")
             
-            with st.spinner("Scanning top stocks... (दिन में पहली बार लोड होने में 10-15 सेकंड लग सकते हैं)"):
+            with st.spinner("Scanning top stocks... (पहली बार में 15 सेकंड लग सकते हैं)"):
                 breakout_df = scan_52w_high_stocks()
                 
                 if not breakout_df.empty:
+                    st.success("🟢 🚨 ये स्टॉक्स आज ज़बरदस्त तेज़ी में हैं!")
                     st.dataframe(breakout_df, use_container_width=True, hide_index=True)
                 else:
-                    st.info("आज कोई भी स्टॉक अपने 52-Week High के आस-पास नहीं है।")
+                    st.warning("🔴 आज इस लिस्ट में से कोई भी टॉप स्टॉक अपने 52-Week High पर नहीं है।")
 
 if __name__ == "__main__":
     render_dashboard()
+    
