@@ -52,7 +52,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 🚀 52-WEEK HIGH STRICT SCANNER ---
-@st.cache_data(ttl=86400) # 24 घंटे में सिर्फ एक बार डेटा मंगाएगा
+@st.cache_data(ttl=86400)
 def scan_52w_high_stocks():
     nifty_stocks = [
         "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS", 
@@ -73,7 +73,6 @@ def scan_52w_high_stocks():
                         current_price = close_prices.iloc[-1]
                         year_high = close_prices.max()
                         
-                        # सिर्फ वही स्टॉक्स जो 52-Week High के 2% के अंदर हैं
                         if current_price >= (year_high * 0.98): 
                             breakout_list.append({
                                 "Symbol": stock.replace(".NS", ""),
@@ -130,7 +129,26 @@ def render_sidebar():
         st.title("📊 Navigation")
         
         st.subheader("🔍 Search Stock")
-        symbol = st.text_input("Enter Stock Symbol", value="RELIANCE", placeholder="e.g., RELIANCE, TCS").upper().strip()
+        
+        # --- 🚀 SMART AUTO-COMPLETE SEARCH BAR ---
+        # यहाँ आप कॉमा लगाकर अपनी पसंद के और भी स्टॉक्स जोड़ सकते हैं
+        POPULAR_STOCKS = [
+            "RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "INFY", "SBIN", "BHARTIARTL", 
+            "ITC", "LT", "BAJFINANCE", "AXISBANK", "KOTAKBANK", "MARUTI", "SUNPHARMA", 
+            "TATAMOTORS", "M&M", "ASIANPAINT", "TITAN", "HAL", "ZOMATO", "TRENT", 
+            "ADANIENT", "NTPC", "POWERGRID", "ULTRACEMCO", "WIPRO", "ONGC", "COALINDIA", 
+            "HINDALCO", "TATASTEEL", "BAJAJ-AUTO", "RBLBANK", "YESBANK", "PNB", "SUZLON",
+            "IRFC", "RVNL", "JIOFIN", "HCLTECH", "ADANIPORTS", "GRASIM", "TECHM", "CIPLA",
+            "INDUSINDBK", "EICHERMOT", "DIVISLAB", "DRREDDY", "BAJAJFINSV", "HEROMOTOCO"
+        ]
+        POPULAR_STOCKS.sort() # यह लिस्ट को A से Z तक सेट कर देगा
+        
+        # सादे टेक्स्ट बॉक्स की जगह स्मार्ट सर्च वाला ड्रॉपडाउन
+        symbol = st.selectbox(
+            "Enter Stock Symbol", 
+            options=POPULAR_STOCKS, 
+            index=POPULAR_STOCKS.index("RELIANCE")
+        )
         
         # --- 🔄 REFRESH BUTTON ---
         if st.button("🔄 Refresh Live Data", use_container_width=True):
@@ -260,14 +278,17 @@ def render_dashboard():
                     
                     if major_holders is not None and not major_holders.empty:
                         st.markdown("### 📊 Major Holdings Breakdown (प्रमोटर और अन्य)")
+                        if len(major_holders.columns) >= 2:
+                            major_holders.columns = ["Value", "Holder Category"][:len(major_holders.columns)]
                         st.dataframe(major_holders, use_container_width=True, hide_index=True)
+                    else:
+                        st.info("⚠️ इस स्टॉक का Major Holdings डेटा फ्री API पर उपलब्ध नहीं है।")
                         
                     if inst_holders is not None and not inst_holders.empty:
                         st.markdown("### 🏢 Top Institutional Holders (FII / DII)")
                         st.dataframe(inst_holders, use_container_width=True, hide_index=True)
-                        
-                    if (major_holders is None or major_holders.empty) and (inst_holders is None or inst_holders.empty):
-                        st.info("⚠️ इस स्टॉक का Shareholding/Institutional डेटा अभी उपलब्ध नहीं है।")
+                    elif (major_holders is None or major_holders.empty):
+                        pass
             except Exception:
                 st.warning("⚠️ डेटा लोड करने में समस्या हुई।")
             
