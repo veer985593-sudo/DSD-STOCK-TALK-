@@ -131,7 +131,6 @@ def render_sidebar():
         st.subheader("🔍 Search Stock")
         
         # --- 🚀 SMART AUTO-COMPLETE SEARCH BAR ---
-        # यहाँ आप कॉमा लगाकर अपनी पसंद के और भी स्टॉक्स जोड़ सकते हैं
         POPULAR_STOCKS = [
             "RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "INFY", "SBIN", "BHARTIARTL", 
             "ITC", "LT", "BAJFINANCE", "AXISBANK", "KOTAKBANK", "MARUTI", "SUNPHARMA", 
@@ -141,9 +140,8 @@ def render_sidebar():
             "IRFC", "RVNL", "JIOFIN", "HCLTECH", "ADANIPORTS", "GRASIM", "TECHM", "CIPLA",
             "INDUSINDBK", "EICHERMOT", "DIVISLAB", "DRREDDY", "BAJAJFINSV", "HEROMOTOCO"
         ]
-        POPULAR_STOCKS.sort() # यह लिस्ट को A से Z तक सेट कर देगा
+        POPULAR_STOCKS.sort()
         
-        # सादे टेक्स्ट बॉक्स की जगह स्मार्ट सर्च वाला ड्रॉपडाउन
         symbol = st.selectbox(
             "Enter Stock Symbol", 
             options=POPULAR_STOCKS, 
@@ -277,18 +275,25 @@ def render_dashboard():
                     inst_holders = ticker.institutional_holders
                     
                     if major_holders is not None and not major_holders.empty:
-                        st.markdown("### 📊 Major Holdings Breakdown (प्रमोटर और अन्य)")
-                        if len(major_holders.columns) >= 2:
-                            major_holders.columns = ["Value", "Holder Category"][:len(major_holders.columns)]
-                        st.dataframe(major_holders, use_container_width=True, hide_index=True)
+                        st.markdown("### 📊 Major Holdings Breakdown")
+                        
+                        # 🛠️ बग फिक्स: छुपे हुए नामों को वापस लाने का कोड
+                        df_m = major_holders.copy()
+                        if isinstance(df_m.index[0], str): 
+                            df_m = df_m.reset_index()
+                            df_m.columns = ["Category / Holder Type", "Value"]
+                        elif len(df_m.columns) >= 2:
+                            df_m.columns = ["Value", "Category / Holder Type"]
+                            df_m = df_m[["Category / Holder Type", "Value"]]
+                            
+                        st.dataframe(df_m, use_container_width=True, hide_index=True)
                     else:
                         st.info("⚠️ इस स्टॉक का Major Holdings डेटा फ्री API पर उपलब्ध नहीं है।")
                         
                     if inst_holders is not None and not inst_holders.empty:
                         st.markdown("### 🏢 Top Institutional Holders (FII / DII)")
                         st.dataframe(inst_holders, use_container_width=True, hide_index=True)
-                    elif (major_holders is None or major_holders.empty):
-                        pass
+                        
             except Exception:
                 st.warning("⚠️ डेटा लोड करने में समस्या हुई।")
             
