@@ -250,7 +250,7 @@ def render_dashboard():
             except Exception:
                 st.warning("⚠️ इस स्टॉक का फंडामेंटल डेटा अभी उपलब्ध नहीं है।")
                 
-       with tab3:
+        with tab3:
             st.subheader(f"🏦 {symbol} Shareholding & Institutional Activity")
             try:
                 with st.spinner("Fetching Institutional Data..."):
@@ -270,6 +270,8 @@ def render_dashboard():
                         st.info("⚠️ इस स्टॉक का Shareholding/Institutional डेटा अभी उपलब्ध नहीं है।")
             except Exception:
                 st.warning("⚠️ डेटा लोड करने में समस्या हुई।")
+            
+        st.divider()
         
         # --- 🔥 52-Week High Scanner Section ---
         with st.expander("🔥 DSD 52-Week High Radar (Auto-Scanner)", expanded=True):
@@ -286,4 +288,3 @@ def render_dashboard():
 
 if __name__ == "__main__":
     render_dashboard()
-    
