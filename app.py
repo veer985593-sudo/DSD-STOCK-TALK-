@@ -1,5 +1,5 @@
 """
-Streamlit Web UI for Stock Research Assistant
+STOCK BY DSD AI - Advanced Stock Research Assistant
 Beautiful dashboard for Indian stock market analysis
 """
 import html as html_module
@@ -13,7 +13,7 @@ import re
 
 # Must be first Streamlit command
 st.set_page_config(
-    page_title="DSD STOCK TALK™",
+    page_title="STOCK BY DSD AI",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -41,15 +41,22 @@ st.markdown("""
     }
     .positive { color: #00C851; font-weight: bold; }
     .negative { color: #ff4444; font-weight: bold; }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        padding: 10px 20px;
-        border-radius: 5px;
-    }
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
+    .stTabs [data-baseweb="tab"] { padding: 10px 20px; border-radius: 5px; }
 </style>
 """, unsafe_allow_html=True)
+
+# Helper: Color Logic for Fundamentals
+def get_health_status(value, metric_type):
+    if value is None or value == "N/A": return "neutral"
+    try:
+        val = float(value)
+        if metric_type == "PE": return "good" if val < 25 else "bad" if val > 40 else "neutral"
+        if metric_type == "ROE": return "good" if val > 15 else "bad" if val < 5 else "neutral"
+        if metric_type == "DEBT": return "good" if val < 1 else "bad" if val > 2 else "neutral"
+    except:
+        pass
+    return "neutral"
 
 # --- 🚀 52-WEEK HIGH STRICT SCANNER ---
 @st.cache_data(ttl=86400)
@@ -119,9 +126,8 @@ def _render_range_bar(label: str, low: float, high: float, current: float):
     st.markdown(html_content, unsafe_allow_html=True)
 
 def render_header():
-    # 🛠️ यहाँ नाम बदल दिया गया है! 
     st.markdown('<h1 class="main-header">🇮🇳 STOCK BY DSD AI</h1>', unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: gray;'>AI-Powered Research for Indian Markets (NSE/BSE)</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: gray;'>Advanced AI Research for Indian Markets (NSE/BSE)</p>", unsafe_allow_html=True)
     st.divider()
 
 def render_sidebar():
@@ -229,7 +235,7 @@ def render_dashboard():
             _render_range_bar("52W", 2100.00, 3100.00, 2495.50)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        tab1, tab2, tab3 = st.tabs(["Technical Analysis", "Fundamental Data", "Institutional Activity"])
+        tab1, tab2, tab3 = st.tabs(["Technical Analysis", "Fundamental Health", "Ownership & Alerts"])
         
         with tab1:
             df = _fetch_chart_data(symbol)
@@ -241,33 +247,68 @@ def render_dashboard():
                 st.write("Chart data not available.")
                 
         with tab2:
-            st.subheader(f"📊 {symbol} Fundamentals")
+            st.subheader(f"📊 {symbol} Fundamental Health")
             try:
-                with st.spinner("Fetching live fundamentals..."):
+                with st.spinner("Analyzing fundamentals..."):
                     info = yf.Ticker(f"{symbol}.NS").info
                     
                     f_col1, f_col2, f_col3 = st.columns(3)
-                    mcap = info.get('marketCap')
-                    f_col1.metric("Market Cap", f"₹{mcap/10000000:,.2f} Cr" if mcap else "N/A")
-                    f_col2.metric("P/E Ratio", round(info.get('trailingPE', 0), 2) if info.get('trailingPE') else "N/A")
+                    
+                    # Custom function to show color coded metrics
+                    def show_health_metric(col, label, val_raw, metric_type, is_percent=False):
+                        status = get_health_status(val_raw, metric_type)
+                        icon = "🟢" if status == "good" else "🔴" if status == "bad" else "⚪"
+                        
+                        if val_raw is None or val_raw == "N/A":
+                            disp_val = "N/A"
+                        else:
+                            disp_val = f"{val_raw*100:.2f}%" if is_percent else f"{val_raw:.2f}"
+                            
+                        col.metric(f"{icon} {label}", disp_val)
+
+                    pe = info.get('trailingPE')
                     roe = info.get('returnOnEquity')
-                    f_col3.metric("ROE", f"{roe*100:.2f}%" if roe else "N/A")
+                    debt = info.get('debtToEquity')
+                    
+                    mcap = info.get('marketCap')
+                    
+                    f_col1.metric("Market Cap", f"₹{mcap/10000000:,.2f} Cr" if mcap else "N/A")
+                    show_health_metric(f_col2, "P/E Ratio", pe, "PE", False)
+                    show_health_metric(f_col3, "ROE", roe, "ROE", True)
                     
                     st.divider()
                     
                     f_col4, f_col5, f_col6 = st.columns(3)
                     f_col4.metric("Book Value", f"₹{info.get('bookValue', 'N/A')}")
-                    f_col5.metric("Debt to Equity", info.get('debtToEquity', 'N/A'))
+                    show_health_metric(f_col5, "Debt to Equity", debt, "DEBT", False)
+                    
                     div = info.get('dividendYield')
                     f_col6.metric("Dividend Yield", f"{div*100:.2f}%" if div else "N/A")
+                    
+                    st.caption("🟢 हरा (Green) = अच्छी रेंज में है | 🔴 लाल (Red) = खतरे या चिंता की रेंज में है | ⚪ सफेद = सामान्य/डेटा नहीं")
             except Exception:
                 st.warning("⚠️ इस स्टॉक का फंडामेंटल डेटा अभी उपलब्ध नहीं है।")
                 
         with tab3:
-            st.subheader(f"🏦 {symbol} Shareholding & Institutional Activity")
+            st.subheader(f"🏢 {symbol} Ownership Structure & Alerts")
             try:
-                with st.spinner("Fetching Institutional Data..."):
+                with st.spinner("Checking Promoter Activity..."):
                     ticker = yf.Ticker(f"{symbol}.NS")
+                    
+                    # --- 🚨 PROMOTER ALERT SECTION ---
+                    st.markdown("### 🚨 Promoter Trend Alert")
+                    try:
+                        insider_trades = ticker.insider_transactions
+                        if insider_trades is not None and not insider_trades.empty:
+                            st.error("🔴 **ALERT (Red Flag 🚩):** हाल ही में इस स्टॉक में प्रमोटर/इनसाइडर की गतिविधि दर्ज की गई है। कृपया चेक करें कि कहीं वे अपनी होल्डिंग कम (Selling) तो नहीं कर रहे हैं!")
+                        else:
+                            st.success("🟢 **SAFE:** हाल-फिलहाल में प्रमोटर द्वारा शेयर बेचने (Holding कम करने) का कोई भी नेगेटिव अलर्ट नहीं मिला है।")
+                    except:
+                        st.success("🟢 **SAFE:** हाल-फिलहाल में प्रमोटर द्वारा शेयर बेचने का कोई अलर्ट नहीं है।")
+                    
+                    st.divider()
+                    # ---------------------------------
+                    
                     major_holders = ticker.major_holders
                     inst_holders = ticker.institutional_holders
                     
@@ -315,7 +356,7 @@ def render_dashboard():
         st.divider()
         
         with st.expander("🔥 DSD 52-Week High Radar (Auto-Scanner)", expanded=True):
-            st.markdown("इस लिस्ट में **सिर्फ वही** स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर (High) पर हैं। बाकी स्टॉक्स फिल्टर कर दिए गए हैं।")
+            st.markdown("इस लिस्ट में **सिर्फ वही** स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर (High) पर हैं।")
             
             with st.spinner("Scanning top stocks... (पहली बार में 15 सेकंड लग सकते हैं)"):
                 breakout_df = scan_52w_high_stocks()
