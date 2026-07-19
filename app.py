@@ -1,5 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
+Ultra Premium Dark Mode UI (Bloomberg Terminal Style)
 """
 import streamlit as st
 import json
@@ -11,42 +12,124 @@ import yfinance as yf
 # Must be first Streamlit command
 st.set_page_config(
     page_title="STOCK BY DSD AI",
-    page_icon="📊",
+    page_icon="🚩",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS - (Fixed for both Light & Dark Mode)
+# --- 💎 ULTRA PREMIUM DARK THEME CSS ---
 st.markdown("""
 <style>
+    /* 1. Main Background & Text */
+    .stApp {
+        background-color: #0A0E17;
+        color: #E0E6ED;
+    }
+    
+    /* 2. Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background-color: #121826;
+        border-right: 1px solid #C5A059; /* Subtle Golden Border */
+    }
+    [data-testid="stSidebar"] * {
+        color: #E0E6ED;
+    }
+    
+    /* 3. Main Header (Golden Gradient) */
     .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        background: linear-gradient(90deg, #FF9933, #138808);
+        font-size: 2.6rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
-        padding: 1rem;
+        padding: 1rem 0 0.2rem 0;
+        letter-spacing: 1px;
     }
-    /* Adapts to light/dark mode natively */
+    .sub-header {
+        text-align: center;
+        color: #8b949e;
+        font-size: 0.95rem;
+        margin-bottom: 2rem;
+    }
+
+    /* 4. Top Market Overview Metrics (Glass Cards) */
+    [data-testid="metric-container"] {
+        background: linear-gradient(145deg, #1A2235, #121826);
+        border: 1px solid #2D3748;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        box-shadow: inset 0px 1px 1px rgba(255,255,255,0.05), 0 4px 12px rgba(0,0,0,0.5);
+    }
+    [data-testid="stMetricLabel"] { color: #A0AEC0 !important; }
+    [data-testid="stMetricValue"] { color: #FFFFFF !important; font-size: 1.8rem !important; font-weight: 600 !important; }
+    [data-testid="stMetricDelta"] svg { fill: #00C851; } /* Green Arrow */
+
+    /* 5. Custom Analysis Cards */
     .metric-card {
+        background: #121826;
+        border: 1px solid #1E2638;
         padding: 1.5rem;
-        border-radius: 10px;
-        border: 1px solid rgba(128, 128, 128, 0.2);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin-bottom: 1rem;
+        border-radius: 12px;
+        color: #E0E6ED;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
-    .trend-card {
-        padding: 10px;
-        margin-bottom: 8px;
-        border-radius: 5px;
-        border-left: 4px solid #ccc;
-        background-color: rgba(128, 128, 128, 0.05);
+
+    /* 6. Gold Border Sync Button */
+    .stButton button {
+        background-color: #121826 !important;
+        border: 1px solid #C5A059 !important;
+        color: #C5A059 !important;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.3s ease;
     }
-    .trend-card.gainer { border-left-color: #00C851; }
-    .trend-card.loser { border-left-color: #ff4444; }
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
-    .stTabs [data-baseweb="tab"] { padding: 10px 20px; border-radius: 5px; }
+    .stButton button:hover {
+        background-color: rgba(197, 160, 89, 0.1) !important;
+        box-shadow: 0 0 12px rgba(197, 160, 89, 0.3);
+    }
+
+    /* 7. Tabs Styling */
+    .stTabs [data-baseweb="tab-list"] { 
+        gap: 0px; 
+        background-color: transparent; 
+        border-bottom: 1px solid #1E2638;
+    }
+    .stTabs [data-baseweb="tab"] { 
+        padding: 12px 24px; 
+        background: transparent; 
+        color: #A0AEC0; 
+        border-radius: 0;
+        border: none;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #C5A059 !important;
+        border-bottom: 2px solid #C5A059 !important;
+        background-color: rgba(197, 160, 89, 0.05) !important;
+    }
+
+    /* 8. Alert Boxes (Momentum Alert) */
+    [data-testid="stAlert"] {
+        background-color: #152B20 !important; /* Dark Green */
+        border: 1px solid #1B452A !important;
+        color: #4ADE80 !important;
+        border-radius: 8px !important;
+    }
+    
+    /* 9. Dataframes */
+    [data-testid="stDataFrame"] { background-color: transparent !important; }
+    
+    /* 10. Expander (Radar) */
+    .streamlit-expanderHeader {
+        background-color: #1A2235 !important;
+        border-radius: 8px !important;
+        color: #E0E6ED !important;
+    }
+    .streamlit-expanderContent {
+        background-color: #0A0E17 !important;
+        border: 1px solid #1E2638 !important;
+        border-top: none !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -78,7 +161,6 @@ FO_STOCKS_LIST = [
 ]
 FO_STOCKS_LIST.sort()
 
-# Helper: Color Logic for Fundamentals
 def get_health_status(value, metric_type):
     if value is None or value == "N/A": return "neutral"
     try:
@@ -90,7 +172,6 @@ def get_health_status(value, metric_type):
         pass
     return "neutral"
 
-# --- 🚀 LIVE TRENDING STOCKS (TOP GAINERS / LOSERS FROM F&O) ---
 @st.cache_data(ttl=300) 
 def get_live_trending_fo():
     nifty_stocks = [f"{stock}.NS" for stock in FO_STOCKS_LIST]
@@ -125,7 +206,6 @@ def get_live_trending_fo():
     except Exception:
         return {"gainers": [], "losers": []}
 
-# --- 🚀 52-WEEK HIGH SCANNER ---
 @st.cache_data(ttl=86400)
 def scan_52w_high_stocks():
     nifty_stocks = [f"{stock}.NS" for stock in FO_STOCKS_LIST]
@@ -163,31 +243,32 @@ def get_index_data():
 def _render_range_bar(label: str, low: float, high: float, current: float):
     if high <= low or high == 0: return
     pct = max(0, min(100, ((current - low) / (high - low)) * 100))
+    # Custom Premium Progress Bar (Exactly like photo)
     html_content = f"""
-    <div style="margin: 0.8rem 0; width: 100%;">
-      <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:6px;">
-        <span style="flex:1; text-align:left;">Low: <b>₹{low:,.2f}</b></span>
-        <span style="flex:1; text-align:right;">High: <b>₹{high:,.2f}</b></span>
+    <div style="margin: 1rem 0; width: 100%;">
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#A0AEC0; margin-bottom:8px;">
+        <span>Low: <b>₹{low:,.2f}</b></span>
+        <span>High: <b>₹{high:,.2f}</b></span>
       </div>
-      <div style="position:relative; height:10px; background:linear-gradient(90deg, #ff4444 0%, #ffcc00 50%, #00C851 100%); border-radius:5px; width:100%;">
-        <div style="position:absolute; left:calc({pct}% - 7px); top:-5px; width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent; border-bottom:14px solid #333;"></div>
+      <div style="position:relative; height:6px; background:#1E2638; border-radius:3px; width:100%;">
+        <div style="position:absolute; left:0; top:0; height:100%; width:{pct}%; background:linear-gradient(90deg, #ff4444, #ffcc00, #00C851); border-radius:3px;"></div>
+        <div style="position:absolute; left:calc({pct}% - 6px); top:6px; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:8px solid #E2C275;"></div>
       </div>
-      <div style="text-align:center; font-size:0.9rem; margin-top:8px; font-weight:bold;">
-        Current: <span style="color:#FF9933;">₹{current:,.2f}</span>
+      <div style="text-align:center; font-size:0.85rem; margin-top:14px; color:#E0E6ED;">
+        Current: <span style="color:#E2C275; font-weight:bold;">₹{current:,.2f}</span>
       </div>
     </div>
     """
     st.markdown(html_content, unsafe_allow_html=True)
 
 def render_header():
-    st.markdown('<h1 class="main-header">🇮🇳 STOCK BY DSD AI</h1>', unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: gray;'>Professional AI Market Intelligence Terminal</p>", unsafe_allow_html=True)
-    st.divider()
+    st.markdown('<div class="main-header">🚩 STOCK BY DSD AI</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Professional AI Market Intelligence Terminal</div>', unsafe_allow_html=True)
+    st.write("") # Spacer
 
 def render_sidebar():
     with st.sidebar:
-        st.image("https://upload.wikimedia.org/wikipedia/en/thumb/4/41/Flag_of_India.svg/1200px-Flag_of_India.svg.png", width=50)
-        st.title("📊 Navigation")
+        st.markdown("### 📊 Navigation")
         
         symbol = st.selectbox(
             "🔍 Search F&O Stock", 
@@ -195,43 +276,32 @@ def render_sidebar():
             index=FO_STOCKS_LIST.index("RELIANCE")
         )
         
-        if st.button("🔄 Sync Live Data", use_container_width=True, type="primary"):
+        if st.button("🔄 Sync Live Data", use_container_width=True, type="secondary"):
             st.rerun()
             
         st.divider()
-        st.subheader("🔥 Live F&O Action")
+        st.markdown("#### 🔥 Live F&O Action")
+        st.markdown("<span style='background:#1B3B27; color:#4ADE80; padding:4px 10px; border-radius:12px; font-size:0.8rem;'>🟢 Top Gainers</span>", unsafe_allow_html=True)
+        st.write("")
         
         with st.spinner("Fetching Live Market..."):
             trending = get_live_trending_fo()
             gainers = trending.get("gainers", [])
-            losers = trending.get("losers", [])
 
-        if gainers or losers:
-            trend_tab1, trend_tab2 = st.tabs(["🟢 Top Gainers", "🔴 Top Losers"])
-            with trend_tab1:
-                if not gainers: st.write("No gainers currently.")
-                for g in gainers:
-                    st.markdown(f"""
-                    <div class="trend-card gainer">
-                        <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                            <span>{g['symbol']}</span>
-                            <span style="color:#00C851;">+{g['pct']}%</span>
-                        </div>
-                        <div style="font-size:0.85rem; color:gray;">₹{g['current']:,.2f}</div>
+        if gainers:
+            for g in gainers:
+                # Custom Sleek Trend Cards (Like Photo)
+                st.markdown(f"""
+                <div style="background:#131823; border: 1px solid #1E2638; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:#E0E6ED; font-weight:600; font-size:0.95rem;">{g['symbol']}</span>
+                        <span style="color:#00C851; font-weight:600; font-size:0.9rem;">+{g['pct']}%</span>
                     </div>
-                    """, unsafe_allow_html=True)
-            with trend_tab2:
-                if not losers: st.write("No losers currently.")
-                for ls in losers:
-                    st.markdown(f"""
-                    <div class="trend-card loser">
-                        <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                            <span>{ls['symbol']}</span>
-                            <span style="color:#ff4444;">{ls['pct']}%</span>
-                        </div>
-                        <div style="font-size:0.85rem; color:gray;">₹{ls['current']:,.2f}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    <div style="color:#8b949e; font-size:0.8rem; margin-top:4px;">₹{g['current']:,.2f}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.write("No gainers currently.")
         
         st.divider()
         now = datetime.now()
@@ -263,7 +333,7 @@ def _fetch_chart_data(symbol: str) -> pd.DataFrame:
 def render_dashboard():
     render_header()
     render_market_overview()
-    st.divider()
+    st.write("")
     
     symbol = render_sidebar()
     
@@ -301,8 +371,24 @@ def render_dashboard():
         with tab1:
             df = _fetch_chart_data(symbol)
             if not df.empty:
-                fig = go.Figure(data=[go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'])])
-                fig.update_layout(title=f"{symbol} (Last 1 Month)")
+                fig = go.Figure(data=[go.Candlestick(
+                    x=df.index, 
+                    open=df['Open'], 
+                    high=df['High'], 
+                    low=df['Low'], 
+                    close=df['Close'],
+                    increasing_line_color='#00C851', 
+                    decreasing_line_color='#ff4444'
+                )])
+                fig.update_layout(
+                    title=f"{symbol} (Last 1 Month)", 
+                    template="plotly_dark",
+                    paper_bgcolor='#0A0E17',
+                    plot_bgcolor='#0A0E17',
+                    margin=dict(l=10, r=10, t=40, b=10),
+                    xaxis=dict(showgrid=True, gridcolor='#1E2638'),
+                    yaxis=dict(showgrid=True, gridcolor='#1E2638')
+                )
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.write("Chart data not available.")
@@ -398,7 +484,7 @@ def render_dashboard():
             except Exception:
                 st.warning("⚠️ डेटा लोड करने में समस्या हुई।")
             
-        st.divider()
+        st.write("") # Spacer
         
         with st.expander("🔥 DSD 52-Week High Master Radar", expanded=True):
             st.markdown("इस लिस्ट में **सिर्फ वही** F&O स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर (High) के करीब हैं।")
