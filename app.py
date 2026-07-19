@@ -46,6 +46,34 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- 🚀 COMPREHENSIVE F&O STOCKS MASTER LIST ---
+FO_STOCKS_LIST = [
+    "AARTIIND", "ABB", "ABBOTINDIA", "ABCAPITAL", "ABFRL", "ACC", "ADANIENT", "ADANIPORTS", 
+    "ALKEM", "AMBUJACEM", "APOLLOHOSP", "APOLLOTYRE", "ASHOKLEY", "ASIANPAINT", "ASTRAL", 
+    "ATUL", "AUBANK", "AUROPHARMA", "AXISBANK", "BAJAJ-AUTO", "BAJAJFINSV", "BAJFINANCE", 
+    "BALKRISIND", "BALRAMCHIN", "BANDHANBNK", "BANKBARODA", "BATAINDIA", "BEL", "BERGEPAINT", 
+    "BHARATFORG", "BHARTIARTL", "BHEL", "BIOCON", "BOSCHLTD", "BPCL", "BRITANNIA", "BSOFT", 
+    "CANBK", "CANFINHOME", "CHAMBLFERT", "CHOLAFIN", "CIPLA", "COALINDIA", "COFORGE", "COLPAL", 
+    "CONCOR", "COROMANDEL", "CROMPTON", "CUB", "CUMMINSIND", "DABUR", "DALBHARAT", "DEEPAKNTR", 
+    "DIVISLAB", "DIXON", "DLF", "DRREDDY", "EICHERMOT", "ESCORTS", "EXIDEIND", "FEDERALBNK", 
+    "GAIL", "GLENMARK", "GMRINFRA", "GNFC", "GODREJCP", "GODREJPROP", "GRANULES", "GRASIM", 
+    "GUJGASLTD", "HAL", "HAVELLS", "HCLTECH", "HDFCAMC", "HDFCBANK", "HDFCLIFE", "HEROMOTOCO", 
+    "HINDALCO", "HINDCOPPER", "HINDPETRO", "HINDUNILVR", "ICICIBANK", "ICICIGI", "ICICIPRULI", 
+    "IDEA", "IDFC", "IDFCFIRSTB", "IEX", "IGL", "INDHOTEL", "INDIACEM", "INDIAMART", "INDIGO", 
+    "INDUSINDBK", "INDUSTOWER", "INFY", "IPCALAB", "IRCTC", "ITC", "JINDALSTEL", "JKCEMENT", 
+    "JSWSTEEL", "JUBLFOOD", "KOTAKBANK", "L&TFH", "LALPATHLAB", "LAURUSLABS", "LICHSGFIN", 
+    "LT", "LTIM", "LTTS", "LUPIN", "M&M", "M&MFIN", "MANAPPURAM", "MARICO", "MARUTI", "MCDOWELL-N", 
+    "MCX", "METROPOLIS", "MFSL", "MGL", "MOTHERSON", "MPHASIS", "MRF", "MUTHOOTFIN", "NATIONALUM", 
+    "NAUKRI", "NAVINFLUOR", "NESTLEIND", "NMDC", "NTPC", "OBEROIRLTY", "OFSS", "ONGC", "PAGEIND", 
+    "PEL", "PERSISTENT", "PETRONET", "PFC", "PIDILITIND", "PIIND", "PNB", "POLYCAB", "POONAWALLA", 
+    "POWERGRID", "PVRINOX", "RAMCOCEM", "RBLBANK", "RECLTD", "RELIANCE", "SAIL", "SBICARD", 
+    "SBILIFE", "SBIN", "SHREECEM", "SHRIRAMFIN", "SIEMENS", "SRF", "SUNTV", "SUNPHARMA", 
+    "SYNGENE", "TATACHEM", "TATACOMM", "TATACONSUM", "TATAMOTORS", "TATAPOWER", "TATASTEEL", 
+    "TCS", "TECHM", "TITAN", "TORNTPHARM", "TRENT", "TVSMOTOR", "UBL", "ULTRACEMCO", "UPL", 
+    "VEDL", "VOLTAS", "WIPRO", "ZEEL", "ZYDUSLIFE", "JIOFIN", "RVNL"
+]
+FO_STOCKS_LIST.sort()
+
 # Helper: Color Logic for Fundamentals
 def get_health_status(value, metric_type):
     if value is None or value == "N/A": return "neutral"
@@ -58,19 +86,15 @@ def get_health_status(value, metric_type):
         pass
     return "neutral"
 
-# --- 🚀 52-WEEK HIGH STRICT SCANNER ---
+# --- 🚀 52-WEEK HIGH SCANNER (NOW SCANS ALL F&O STOCKS) ---
 @st.cache_data(ttl=86400)
 def scan_52w_high_stocks():
-    nifty_stocks = [
-        "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS", 
-        "SBIN.NS", "BHARTIARTL.NS", "ITC.NS", "LT.NS", "BAJFINANCE.NS",
-        "AXISBANK.NS", "KOTAKBANK.NS", "MARUTI.NS", "SUNPHARMA.NS", "TATAMOTORS.NS",
-        "M&M.NS", "ASIANPAINT.NS", "TITAN.NS", "HAL.NS", "ZOMATO.NS", "TRENT.NS",
-        "ADANIENT.NS", "NTPC.NS", "POWERGRID.NS", "ULTRACEMCO.NS", "WIPRO.NS"
-    ]
+    # .NS जोड़कर पूरी लिस्ट तैयार करना
+    nifty_stocks = [f"{stock}.NS" for stock in FO_STOCKS_LIST]
     
     breakout_list = []
     try:
+        # 185 स्टॉक्स का डेटा एक साथ मंगाना 
         data = yf.download(nifty_stocks, period="1y", progress=False)
         if not data.empty:
             for stock in nifty_stocks:
@@ -80,6 +104,7 @@ def scan_52w_high_stocks():
                         current_price = close_prices.iloc[-1]
                         year_high = close_prices.max()
                         
+                        # अगर स्टॉक 52W High के 2% के अंदर है
                         if current_price >= (year_high * 0.98): 
                             breakout_list.append({
                                 "Symbol": stock.replace(".NS", ""),
@@ -93,7 +118,6 @@ def scan_52w_high_stocks():
         pass
     return pd.DataFrame(breakout_list)
 
-# --- Fallback Functions ---
 def get_trending_stocks():
     return {"gainers": [{"symbol": "RELIANCE", "net_price": 2.4}], "losers": [{"symbol": "TCS", "net_price": -1.8}]}
 
@@ -135,23 +159,12 @@ def render_sidebar():
         st.image("https://upload.wikimedia.org/wikipedia/en/thumb/4/41/Flag_of_India.svg/1200px-Flag_of_India.svg.png", width=50)
         st.title("📊 Navigation")
         
-        st.subheader("🔍 Search Stock")
-        
-        POPULAR_STOCKS = [
-            "RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "INFY", "SBIN", "BHARTIARTL", 
-            "ITC", "LT", "BAJFINANCE", "AXISBANK", "KOTAKBANK", "MARUTI", "SUNPHARMA", 
-            "TATAMOTORS", "M&M", "ASIANPAINT", "TITAN", "HAL", "ZOMATO", "TRENT", 
-            "ADANIENT", "NTPC", "POWERGRID", "ULTRACEMCO", "WIPRO", "ONGC", "COALINDIA", 
-            "HINDALCO", "TATASTEEL", "BAJAJ-AUTO", "RBLBANK", "YESBANK", "PNB", "SUZLON",
-            "IRFC", "RVNL", "JIOFIN", "HCLTECH", "ADANIPORTS", "GRASIM", "TECHM", "CIPLA",
-            "INDUSINDBK", "EICHERMOT", "DIVISLAB", "DRREDDY", "BAJAJFINSV", "HEROMOTOCO"
-        ]
-        POPULAR_STOCKS.sort()
+        st.subheader("🔍 Search Stock (F&O)")
         
         symbol = st.selectbox(
-            "Enter Stock Symbol", 
-            options=POPULAR_STOCKS, 
-            index=POPULAR_STOCKS.index("RELIANCE")
+            "Enter F&O Stock Symbol", 
+            options=FO_STOCKS_LIST, 
+            index=FO_STOCKS_LIST.index("RELIANCE")
         )
         
         if st.button("🔄 Refresh Live Data", use_container_width=True):
@@ -254,7 +267,6 @@ def render_dashboard():
                     
                     f_col1, f_col2, f_col3 = st.columns(3)
                     
-                    # Custom function to show color coded metrics
                     def show_health_metric(col, label, val_raw, metric_type, is_percent=False):
                         status = get_health_status(val_raw, metric_type)
                         icon = "🟢" if status == "good" else "🔴" if status == "bad" else "⚪"
@@ -355,17 +367,17 @@ def render_dashboard():
             
         st.divider()
         
-        with st.expander("🔥 DSD 52-Week High Radar (Auto-Scanner)", expanded=True):
-            st.markdown("इस लिस्ट में **सिर्फ वही** स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर (High) पर हैं।")
+        with st.expander("🔥 DSD 52-Week High Radar (Auto-Scanner) - ALL F&O STOCKS", expanded=True):
+            st.markdown("इस लिस्ट में **सिर्फ वही** F&O स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर (High) पर हैं। (185+ स्टॉक्स में से छांटे गए)")
             
-            with st.spinner("Scanning top stocks... (पहली बार में 15 सेकंड लग सकते हैं)"):
+            with st.spinner("Scanning ALL F&O stocks... (इसमें 20-30 सेकंड लग सकते हैं)"):
                 breakout_df = scan_52w_high_stocks()
                 
                 if not breakout_df.empty:
-                    st.success("🟢 🚨 ये स्टॉक्स आज ज़बरदस्त तेज़ी में हैं!")
+                    st.success(f"🟢 🚨 कुल {len(breakout_df)} F&O स्टॉक्स आज ज़बरदस्त तेज़ी (Breakout) में हैं!")
                     st.dataframe(breakout_df, use_container_width=True, hide_index=True)
                 else:
-                    st.warning("🔴 आज इस लिस्ट में से कोई भी टॉप स्टॉक अपने 52-Week High पर नहीं है।")
+                    st.warning("🔴 आज इस लिस्ट में से कोई भी F&O स्टॉक अपने 52-Week High पर नहीं है।")
 
 if __name__ == "__main__":
     render_dashboard()
