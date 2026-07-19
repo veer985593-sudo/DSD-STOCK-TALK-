@@ -250,10 +250,26 @@ def render_dashboard():
             except Exception:
                 st.warning("⚠️ इस स्टॉक का फंडामेंटल डेटा अभी उपलब्ध नहीं है।")
                 
-        with tab3:
-            st.write("FII / DII Historical Activity Track (Data to be integrated).")
-            
-        st.divider()
+       with tab3:
+            st.subheader(f"🏦 {symbol} Shareholding & Institutional Activity")
+            try:
+                with st.spinner("Fetching Institutional Data..."):
+                    ticker = yf.Ticker(f"{symbol}.NS")
+                    major_holders = ticker.major_holders
+                    inst_holders = ticker.institutional_holders
+                    
+                    if major_holders is not None and not major_holders.empty:
+                        st.markdown("### 📊 Major Holdings Breakdown (प्रमोटर और अन्य)")
+                        st.dataframe(major_holders, use_container_width=True, hide_index=True)
+                        
+                    if inst_holders is not None and not inst_holders.empty:
+                        st.markdown("### 🏢 Top Institutional Holders (FII / DII)")
+                        st.dataframe(inst_holders, use_container_width=True, hide_index=True)
+                        
+                    if (major_holders is None or major_holders.empty) and (inst_holders is None or inst_holders.empty):
+                        st.info("⚠️ इस स्टॉक का Shareholding/Institutional डेटा अभी उपलब्ध नहीं है।")
+            except Exception:
+                st.warning("⚠️ डेटा लोड करने में समस्या हुई।")
         
         # --- 🔥 52-Week High Scanner Section ---
         with st.expander("🔥 DSD 52-Week High Radar (Auto-Scanner)", expanded=True):
