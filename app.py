@@ -119,7 +119,8 @@ def _render_range_bar(label: str, low: float, high: float, current: float):
     st.markdown(html_content, unsafe_allow_html=True)
 
 def render_header():
-    st.markdown('<h1 class="main-header">🇮🇳 Stock Research Assistant</h1>', unsafe_allow_html=True)
+    # 🛠️ यहाँ नाम बदल दिया गया है! 
+    st.markdown('<h1 class="main-header">🇮🇳 STOCK BY DSD AI</h1>', unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: gray;'>AI-Powered Research for Indian Markets (NSE/BSE)</p>", unsafe_allow_html=True)
     st.divider()
 
@@ -130,7 +131,6 @@ def render_sidebar():
         
         st.subheader("🔍 Search Stock")
         
-        # --- 🚀 SMART AUTO-COMPLETE SEARCH BAR ---
         POPULAR_STOCKS = [
             "RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "INFY", "SBIN", "BHARTIARTL", 
             "ITC", "LT", "BAJFINANCE", "AXISBANK", "KOTAKBANK", "MARUTI", "SUNPHARMA", 
@@ -148,7 +148,6 @@ def render_sidebar():
             index=POPULAR_STOCKS.index("RELIANCE")
         )
         
-        # --- 🔄 REFRESH BUTTON ---
         if st.button("🔄 Refresh Live Data", use_container_width=True):
             st.rerun()
             
@@ -204,7 +203,6 @@ def render_dashboard():
     if symbol:
         st.header(f"📈 Dashboard Analysis for {symbol}")
         
-        # --- 🚨 YESTERDAY HIGH BREAKOUT ALERT 🚨 ---
         try:
             _hist = yf.Ticker(f"{symbol}.NS").history(period="2d")
             if len(_hist) >= 2:
@@ -231,7 +229,6 @@ def render_dashboard():
             _render_range_bar("52W", 2100.00, 3100.00, 2495.50)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # Tabs for detailed data
         tab1, tab2, tab3 = st.tabs(["Technical Analysis", "Fundamental Data", "Institutional Activity"])
         
         with tab1:
@@ -277,15 +274,33 @@ def render_dashboard():
                     if major_holders is not None and not major_holders.empty:
                         st.markdown("### 📊 Major Holdings Breakdown")
                         
-                        # 🛠️ बग फिक्स: छुपे हुए नामों को वापस लाने का कोड
                         df_m = major_holders.copy()
                         if isinstance(df_m.index[0], str): 
                             df_m = df_m.reset_index()
-                            df_m.columns = ["Category / Holder Type", "Value"]
+                            df_m.columns = ["Category", "Value"]
                         elif len(df_m.columns) >= 2:
-                            df_m.columns = ["Value", "Category / Holder Type"]
-                            df_m = df_m[["Category / Holder Type", "Value"]]
-                            
+                            df_m.columns = ["Value", "Category"]
+                            df_m = df_m[["Category", "Value"]]
+                        
+                        rename_dict = {
+                            "insidersPercentHeld": "👔 Promoter Holding (प्रमोटर)",
+                            "institutionsPercentHeld": "🏦 Institutional Holding (FII/DII)",
+                            "institutionsFloatPercentHeld": "🌊 Market Float by Institutions",
+                            "institutionsCount": "🏢 Total Institutions (संस्थाएं)"
+                        }
+                        df_m["Category"] = df_m["Category"].replace(rename_dict)
+                        
+                        def format_val(x):
+                            try:
+                                val = float(x)
+                                if val <= 1.0 and val > 0:
+                                    return f"{val*100:.2f}%"
+                                return str(int(val))
+                            except:
+                                return x
+                                
+                        df_m["Value"] = df_m["Value"].apply(format_val)
+                        
                         st.dataframe(df_m, use_container_width=True, hide_index=True)
                     else:
                         st.info("⚠️ इस स्टॉक का Major Holdings डेटा फ्री API पर उपलब्ध नहीं है।")
@@ -299,7 +314,6 @@ def render_dashboard():
             
         st.divider()
         
-        # --- 🔥 52-Week High Scanner Section ---
         with st.expander("🔥 DSD 52-Week High Radar (Auto-Scanner)", expanded=True):
             st.markdown("इस लिस्ट में **सिर्फ वही** स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर (High) पर हैं। बाकी स्टॉक्स फिल्टर कर दिए गए हैं।")
             
