@@ -1,6 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
-Live Market Data Integrated
+Live Market Data & Gainers/Losers Integrated
 """
 import streamlit as st
 import json
@@ -19,33 +19,18 @@ st.set_page_config(
 # --- 💎 STYLING & HIGH CONTRAST CSS ---
 st.markdown("""
 <style>
-    .stApp, .main {
-        background-color: #0b0f19 !important;
-    }
-    p, span, div, label, h1, h2, h3, h4, h5, h6, li {
-        color: #F8FAFC !important;
-    }
+    .stApp, .main { background-color: #0b0f19 !important; }
+    p, span, div, label, h1, h2, h3, h4, h5, h6, li { color: #F8FAFC !important; }
     [data-testid="stSidebar"] {
         background-color: #121826 !important;
         border-right: 1px solid #334155 !important;
     }
-    div[role="tablist"] button {
-        background-color: transparent !important;
-    }
-    div[role="tablist"] button p { 
-        color: #94A3B8 !important; 
-        font-size: 1.05rem !important; 
-    }
-    div[role="tablist"] button[aria-selected="true"] p { 
-        color: #D4AF37 !important; 
-        font-weight: 800 !important; 
-    }
-    div[role="tablist"] button[aria-selected="true"] { 
-        border-bottom-color: #D4AF37 !important; 
-    }
+    div[role="tablist"] button { background-color: transparent !important; }
+    div[role="tablist"] button p { color: #94A3B8 !important; font-size: 1.05rem !important; }
+    div[role="tablist"] button[aria-selected="true"] p { color: #D4AF37 !important; font-weight: 800 !important; }
+    div[role="tablist"] button[aria-selected="true"] { border-bottom-color: #D4AF37 !important; }
     [data-testid="stDataFrame"] div, [data-testid="stDataFrame"] th, [data-testid="stDataFrame"] td {
-        color: #FFFFFF !important;
-        background-color: transparent !important;
+        color: #FFFFFF !important; background-color: transparent !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -78,32 +63,20 @@ FO_STOCKS_LIST = [
 ]
 FO_STOCKS_LIST.sort()
 
-# --- 📡 LIVE INDEX DATA FETCHING (NIFTY, SENSEX, BANKNIFTY) ---
-@st.cache_data(ttl=60) # 1 मिनट में लाइव अपडेट होगा
+# --- 📡 LIVE DATA FETCHING ---
+@st.cache_data(ttl=60) 
 def get_live_index_data():
-    index_tickers = {
-        "NIFTY 50": "^NSEI",
-        "SENSEX": "^BSESN",
-        "BANK NIFTY": "^NSEBANK",
-        "NIFTY IT": "^CNXIT"
-    }
+    index_tickers = {"NIFTY 50": "^NSEI", "SENSEX": "^BSESN", "BANK NIFTY": "^NSEBANK", "NIFTY IT": "^CNXIT"}
     results = {}
     for name, sym in index_tickers.items():
         try:
             t = yf.Ticker(sym)
             hist = t.history(period="5d")
             if len(hist) >= 2:
-                prev_close = hist['Close'].iloc[-2]
-                curr_val = hist['Close'].iloc[-1]
+                prev_close, curr_val = hist['Close'].iloc[-2], hist['Close'].iloc[-1]
                 change = curr_val - prev_close
-                pct = (change / prev_close) * 100
-                results[name] = {
-                    "value": curr_val,
-                    "change": change,
-                    "change_percent": pct
-                }
-        except Exception:
-            pass
+                results[name] = {"value": curr_val, "change": change, "change_percent": (change / prev_close) * 100}
+        except Exception: pass
     return results
 
 @st.cache_data(ttl=300) 
@@ -118,8 +91,7 @@ def get_live_trending_fo():
             try:
                 s_data = data[stock].dropna()
                 if len(s_data) >= 2:
-                    prev_close = s_data.iloc[-2]
-                    curr_price = s_data.iloc[-1]
+                    prev_close, curr_price = s_data.iloc[-2], s_data.iloc[-1]
                     pct_change = ((curr_price - prev_close) / prev_close) * 100
                     changes.append({"symbol": stock.replace(".NS", ""), "current": round(curr_price, 2), "pct": round(pct_change, 2)})
             except: continue
@@ -141,14 +113,11 @@ def scan_52w_high_stocks():
                 try:
                     close_prices = data['Close'][stock].dropna()
                     if len(close_prices) > 200: 
-                        current_price = close_prices.iloc[-1]
-                        year_high = close_prices.max()
+                        current_price, year_high = close_prices.iloc[-1], close_prices.max()
                         if current_price >= (year_high * 0.98): 
                             breakout_list.append({
-                                "Symbol": stock.replace(".NS", ""),
-                                "Price": f"₹{current_price:,.2f}",
-                                "52W High": f"₹{year_high:,.2f}",
-                                "Status": "🔥 52W Breakout"
+                                "Symbol": stock.replace(".NS", ""), "Price": f"₹{current_price:,.2f}",
+                                "52W High": f"₹{year_high:,.2f}", "Status": "🔥 52W Breakout"
                             })
                 except Exception: continue
     except Exception: pass
@@ -156,10 +125,7 @@ def scan_52w_high_stocks():
 
 # --- UI COMPONENTS ---
 def _render_custom_metric(label, value, change, pct):
-    color = "#10B981" if change >= 0 else "#EF4444"
-    arrow = "↑" if change >= 0 else "↓"
-    sign = "+" if change >= 0 else ""
-    
+    color, arrow, sign = ("#10B981", "↑", "+") if change >= 0 else ("#EF4444", "↓", "")
     html = f"""
     <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
         <div style="color: #94A3B8 !important; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; text-transform: uppercase;">{label}</div>
@@ -170,18 +136,10 @@ def _render_custom_metric(label, value, change, pct):
     st.markdown(html, unsafe_allow_html=True)
 
 def _render_alert(message, type="success"):
-    if type == "success":
-        bg, border, text_color = "rgba(6, 78, 59, 0.4)", "#059669", "#34D399"
-    elif type == "error":
-        bg, border, text_color = "rgba(127, 29, 29, 0.4)", "#DC2626", "#F87171"
-    else:
-        bg, border, text_color = "rgba(51, 65, 85, 0.4)", "#475569", "#CBD5E1"
-        
-    html = f"""
-    <div style="background: {bg}; border: 1px solid {border}; border-radius: 8px; padding: 12px 16px; margin-bottom: 15px; color: {text_color} !important; font-weight: 500;">
-        {message}
-    </div>
-    """
+    if type == "success": bg, border, text_color = "rgba(6, 78, 59, 0.4)", "#059669", "#34D399"
+    elif type == "error": bg, border, text_color = "rgba(127, 29, 29, 0.4)", "#DC2626", "#F87171"
+    else: bg, border, text_color = "rgba(51, 65, 85, 0.4)", "#475569", "#CBD5E1"
+    html = f'<div style="background: {bg}; border: 1px solid {border}; border-radius: 8px; padding: 12px 16px; margin-bottom: 15px; color: {text_color} !important; font-weight: 500;">{message}</div>'
     st.markdown(html, unsafe_allow_html=True)
 
 def _render_range_bar(label, low, high, current):
@@ -205,10 +163,6 @@ def _render_range_bar(label, low, high, current):
     """
     st.markdown(html_content, unsafe_allow_html=True)
 
-def render_header():
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 20px;">🚩 STOCK BY DSD AI</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align: center; color: #94A3B8 !important; font-size: 1rem; margin-bottom: 30px;">Professional AI Market Intelligence Terminal</p>', unsafe_allow_html=True)
-
 def render_sidebar():
     with st.sidebar:
         st.markdown('<h2 style="color:#FFFFFF !important;">📊 Navigation</h2>', unsafe_allow_html=True)
@@ -220,34 +174,58 @@ def render_sidebar():
         with st.spinner("Fetching Live Market..."):
             trending = get_live_trending_fo()
             gainers = trending.get("gainers", [])
+            losers = trending.get("losers", [])
 
-        if gainers:
-            st.markdown("<span style='background:#064E3B; color:#34D399 !important; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:bold;'>🟢 Top Gainers</span><br><br>", unsafe_allow_html=True)
-            for g in gainers:
-                st.markdown(f"""
-                <div style="background:rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="color:#FFFFFF !important; font-weight:bold; font-size:0.95rem;">{g['symbol']}</span>
-                        <span style="color:#10B981 !important; font-weight:bold; font-size:0.9rem;">+{g['pct']}%</span>
-                    </div>
-                    <div style="color:#94A3B8 !important; font-size:0.85rem; margin-top:4px;">₹{g['current']:,.2f}</div>
-                </div>
-                """, unsafe_allow_html=True)
+        if gainers or losers:
+            trend_tab1, trend_tab2 = st.tabs(["🟢 Gainers", "🔴 Losers"])
+            
+            with trend_tab1:
+                if gainers:
+                    for g in gainers:
+                        st.markdown(f"""
+                        <div style="background:rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:#FFFFFF !important; font-weight:bold; font-size:0.95rem;">{g['symbol']}</span>
+                                <span style="color:#10B981 !important; font-weight:bold; font-size:0.9rem;">+{g['pct']}%</span>
+                            </div>
+                            <div style="color:#94A3B8 !important; font-size:0.85rem; margin-top:4px;">₹{g['current']:,.2f}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.write("No gainers currently.")
+                    
+            with trend_tab2:
+                if losers:
+                    for ls in losers:
+                        st.markdown(f"""
+                        <div style="background:rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:#FFFFFF !important; font-weight:bold; font-size:0.95rem;">{ls['symbol']}</span>
+                                <span style="color:#EF4444 !important; font-weight:bold; font-size:0.9rem;">{ls['pct']}%</span>
+                            </div>
+                            <div style="color:#94A3B8 !important; font-size:0.85rem; margin-top:4px;">₹{ls['current']:,.2f}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.write("No losers currently.")
+                    
+        st.divider()
+        now = datetime.now()
+        status = "🟢 Market Open" if (9 <= now.hour < 15 or (now.hour == 15 and now.minute <= 30)) and now.weekday() < 5 else "🔴 Market Closed"
+        st.markdown(f"**Status:** {status}")
         return symbol
 
-def render_market_overview():
+def render_dashboard():
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 20px;">🚩 STOCK BY DSD AI</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align: center; color: #94A3B8 !important; font-size: 1rem; margin-bottom: 30px;">Professional AI Market Intelligence Terminal</p>', unsafe_allow_html=True)
+    
     indices = get_live_index_data()
     if indices:
         col1, col2, col3, col4 = st.columns(4)
         cols = [col1, col2, col3, col4]
         for idx, (name, data) in enumerate(indices.items()):
             if idx < 4:
-                with cols[idx]:
-                    _render_custom_metric(name, data["value"], data["change"], data["change_percent"])
-
-def render_dashboard():
-    render_header()
-    render_market_overview()
+                with cols[idx]: _render_custom_metric(name, data["value"], data["change"], data["change_percent"])
     st.markdown("<br><br>", unsafe_allow_html=True)
     
     symbol = render_sidebar()
@@ -260,18 +238,13 @@ def render_dashboard():
             if len(_hist) >= 2:
                 yesterday_high = _hist['High'].iloc[-2]
                 current_price = _hist['Close'].iloc[-1]
-                
-                if current_price > yesterday_high:
-                    _render_alert(f"🟢 <b>MOMENTUM ALERT:</b> {symbol} कल के High (₹{yesterday_high:,.2f}) को पार कर चुका है! (Current: ₹{current_price:,.2f})", "success")
-                else:
-                    _render_alert(f"⚪ <b>NO BREAKOUT YET:</b> {symbol} अभी कल के High (₹{yesterday_high:,.2f}) के नीचे ट्रेड कर रहा है।", "neutral")
+                if current_price > yesterday_high: _render_alert(f"🟢 <b>MOMENTUM ALERT:</b> {symbol} कल के High (₹{yesterday_high:,.2f}) को पार कर चुका है! (Current: ₹{current_price:,.2f})", "success")
+                else: _render_alert(f"⚪ <b>NO BREAKOUT YET:</b> {symbol} अभी कल के High (₹{yesterday_high:,.2f}) के नीचे ट्रेड कर रहा है।", "neutral")
         except: pass
 
         col1, col2 = st.columns(2)
-        with col1:
-            _render_range_bar("Intraday", 2450.00, 2530.00, 2495.50)
-        with col2:
-            _render_range_bar("52-Week", 2100.00, 3100.00, 2495.50)
+        with col1: _render_range_bar("Intraday", 2450.00, 2530.00, 2495.50)
+        with col2: _render_range_bar("52-Week", 2100.00, 3100.00, 2495.50)
 
         st.markdown("<br>", unsafe_allow_html=True)
         tab1, tab2, tab3 = st.tabs(["📊 Technical Chart", "🧠 Fundamental Health", "🏢 Ownership & Alerts"])
@@ -285,8 +258,7 @@ def render_dashboard():
                         increasing_line_color='#10B981', decreasing_line_color='#EF4444'
                     )])
                     fig.update_layout(
-                        title=f"{symbol} (Last 1 Month)", 
-                        template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                        title=f"{symbol} (Last 1 Month)", template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                         margin=dict(l=10, r=10, t=40, b=10),
                         xaxis=dict(showgrid=True, gridcolor='#1E293B', tickfont=dict(color='#94A3B8')),
                         yaxis=dict(showgrid=True, gridcolor='#1E293B', tickfont=dict(color='#94A3B8')),
@@ -316,7 +288,6 @@ def render_dashboard():
             try:
                 ticker = yf.Ticker(f"{symbol}.NS")
                 st.markdown('<h3 style="color:#FFFFFF !important;">🚨 Promoter Trust Radar</h3>', unsafe_allow_html=True)
-                
                 try:
                     insider = ticker.insider_transactions
                     if insider is not None and not insider.empty: _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की हालिया गतिविधि दर्ज की गई है। सावधान रहें!", "error")
@@ -326,22 +297,13 @@ def render_dashboard():
                 major_holders = ticker.major_holders
                 if major_holders is not None and not major_holders.empty:
                     df_m = major_holders.copy()
-                    if isinstance(df_m.index[0], str): 
-                        df_m = df_m.reset_index()
-                        df_m.columns = ["Category", "Value"]
-                    elif len(df_m.columns) >= 2:
-                        df_m.columns = ["Value", "Category"]
-                        df_m = df_m[["Category", "Value"]]
-                    
-                    df_m["Category"] = df_m["Category"].replace({
-                        "insidersPercentHeld": "👔 Promoter Holding", "institutionsPercentHeld": "🏦 Institutional Holding",
-                        "institutionsFloatPercentHeld": "🌊 Market Float by Inst.", "institutionsCount": "🏢 Total Institutions"
-                    })
+                    if isinstance(df_m.index[0], str): df_m = df_m.reset_index(); df_m.columns = ["Category", "Value"]
+                    elif len(df_m.columns) >= 2: df_m.columns = ["Value", "Category"]; df_m = df_m[["Category", "Value"]]
+                    df_m["Category"] = df_m["Category"].replace({"insidersPercentHeld": "👔 Promoter Holding", "institutionsPercentHeld": "🏦 Institutional Holding", "institutionsFloatPercentHeld": "🌊 Market Float by Inst.", "institutionsCount": "🏢 Total Institutions"})
                     st.dataframe(df_m, use_container_width=True, hide_index=True)
             except: pass
 
         st.markdown("<br>", unsafe_allow_html=True)
-        
         with st.expander("🔥 DSD 52-Week High Master Radar", expanded=True):
             st.markdown('<p style="color:#94A3B8 !important;">इस लिस्ट में **सिर्फ वही** F&O स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर के करीब हैं।</p>', unsafe_allow_html=True)
             with st.spinner("Scanning ALL F&O stocks live..."):
