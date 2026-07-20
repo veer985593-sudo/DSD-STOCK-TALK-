@@ -1,5 +1,6 @@
-"""STOCK BY DSD AI - Advanced Stock Research Assistant
-Ultra Premium Dark Mode UI with Sidebar
+"""
+STOCK BY DSD AI - Advanced Stock Research Assistant
+Ultra Premium Dark Mode UI with Sidebar (Error-Free Version)
 """
 import streamlit as st
 import json
@@ -69,7 +70,8 @@ def get_live_index_data():
             t = yf.Ticker(sym)
             hist = t.history(period="5d")
             if len(hist) >= 2:
-                prev_close, curr_val = hist['Close'].iloc[-2], hist['Close'].iloc[-1]
+                prev_close = hist['Close'].iloc[-2]
+                curr_val = hist['Close'].iloc[-1]
                 change = curr_val - prev_close
                 results[name] = {"value": curr_val, "change": change, "change_percent": (change / prev_close) * 100}
         except: 
@@ -353,4 +355,4 @@ def render_dashboard():
         st.markdown("<br>", unsafe_allow_html=True)
         
         with st.expander("🔥 DSD 52-Week High Master Radar", expanded=True):
-            st.markdown('<p style="color:#94A3B8 !important;">इस लिस्ट में सिर्फ 
+            st.markdown('<p style="color:#94
