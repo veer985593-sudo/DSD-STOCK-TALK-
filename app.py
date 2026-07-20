@@ -354,4 +354,17 @@ def render_dashboard():
             except Exception: 
                 pass
 
-        st.markdown("""<br
+        st.markdown("""<br>""", unsafe_allow_html=True)
+        
+        with st.expander("🔥 DSD 52-Week High Master Radar", expanded=True):
+            st.markdown("""<p style="color:#94A3B8 !important;">इस लिस्ट में सिर्फ वही F&O स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर के करीब हैं।</p>""", unsafe_allow_html=True)
+            with st.spinner("Scanning ALL F&O stocks live..."):
+                breakout_df = scan_52w_high_stocks()
+                if not breakout_df.empty:
+                    _render_alert(f"🟢 🚨 कुल {len(breakout_df)} F&O स्टॉक्स आज ज़बरदस्त तेज़ी में हैं!", "success")
+                    st.dataframe(breakout_df, use_container_width=True, hide_index=True)
+                else:
+                    _render_alert("🔴 आज इस लिस्ट में से कोई भी F&O स्टॉक अपने 52-Week High पर नहीं है।", "error")
+
+if __name__ == "__main__":
+    render_dashboard()
