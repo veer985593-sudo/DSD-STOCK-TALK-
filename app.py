@@ -13,54 +13,23 @@ st.set_page_config(
     page_title="STOCK BY DSD AI",
     page_icon="🚩",
     layout="wide",
-    initial_sidebar_state="expanded", # साइडबार खुला रहेगा
+    initial_sidebar_state="expanded",
 )
 
-# --- 💎 BULLETPROOF CSS (FORCING COLORS TO BE VISIBLE) ---
+# --- 💎 BULLETPROOF CSS ---
 st.markdown("""
 <style>
-    /* Force App Background to Dark */
-    .stApp, .main {
-        background-color: #0b0f19 !important;
-    }
-    
-    /* Force ALL standard text to be White so nothing hides */
-    p, span, div, label, h1, h2, h3, h4, h5, h6, li {
-        color: #F8FAFC !important;
-    }
-
-    /* Sidebar Background */
-    [data-testid="stSidebar"] {
-        background-color: #121826 !important;
-        border-right: 1px solid #334155 !important;
-    }
-
-    /* Streamlit Tabs (Making text bright and golden on select) */
-    div[role="tablist"] button {
-        background-color: transparent !important;
-    }
-    div[role="tablist"] button p { 
-        color: #94A3B8 !important; 
-        font-size: 1.05rem !important; 
-    }
-    div[role="tablist"] button[aria-selected="true"] p { 
-        color: #D4AF37 !important; 
-        font-weight: 800 !important; 
-    }
-    div[role="tablist"] button[aria-selected="true"] { 
-        border-bottom-color: #D4AF37 !important; 
-    }
-
-    /* Tables / DataFrames Visibility */
+    .stApp, .main { background-color: #0b0f19 !important; }
+    p, span, div, label, h1, h2, h3, h4, h5, h6, li { color: #F8FAFC !important; }
+    [data-testid="stSidebar"] { background-color: #121826 !important; border-right: 1px solid #334155 !important; }
+    div[role="tablist"] button { background-color: transparent !important; }
+    div[role="tablist"] button p { color: #94A3B8 !important; font-size: 1.05rem !important; }
+    div[role="tablist"] button[aria-selected="true"] p { color: #D4AF37 !important; font-weight: 800 !important; }
+    div[role="tablist"] button[aria-selected="true"] { border-bottom-color: #D4AF37 !important; }
     [data-testid="stDataFrame"] div, [data-testid="stDataFrame"] th, [data-testid="stDataFrame"] td {
-        color: #FFFFFF !important;
-        background-color: transparent !important;
+        color: #FFFFFF !important; background-color: transparent !important;
     }
-    
-    /* Input Box Dropdown text visibility */
-    .stSelectbox div[data-baseweb="select"] span {
-        color: #000000 !important; 
-    }
+    .stSelectbox div[data-baseweb="select"] span { color: #000000 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -92,7 +61,6 @@ FO_STOCKS_LIST = [
 ]
 FO_STOCKS_LIST.sort()
 
-# Data Functions
 @st.cache_data(ttl=60) 
 def get_live_index_data():
     index_tickers = {"NIFTY 50": "^NSEI", "SENSEX": "^BSESN", "BANK NIFTY": "^NSEBANK", "NIFTY IT": "^CNXIT"}
@@ -105,7 +73,8 @@ def get_live_index_data():
                 prev_close, curr_val = hist['Close'].iloc[-2], hist['Close'].iloc[-1]
                 change = curr_val - prev_close
                 results[name] = {"value": curr_val, "change": change, "change_percent": (change / prev_close) * 100}
-        except: pass
+        except Exception:
+            pass
     return results
 
 @st.cache_data(ttl=300) 
@@ -124,13 +93,15 @@ def get_live_trending_fo():
                     curr_price = s_data.iloc[-1]
                     pct_change = ((curr_price - prev_close) / prev_close) * 100
                     changes.append({"symbol": stock.replace(".NS", ""), "current": round(curr_price, 2), "pct": round(pct_change, 2)})
-            except: continue
+            except Exception:
+                continue
                 
         changes = sorted(changes, key=lambda x: x['pct'], reverse=True)
         gainers = [c for c in changes if c['pct'] > 0][:5]
         losers = sorted([c for c in changes if c['pct'] < 0], key=lambda x: x['pct'])[:5] 
         return {"gainers": gainers, "losers": losers}
-    except Exception: return {"gainers": [], "losers": []}
+    except Exception:
+        return {"gainers": [], "losers": []}
 
 @st.cache_data(ttl=86400)
 def scan_52w_high_stocks():
@@ -146,7 +117,6 @@ def scan_52w_high_stocks():
                         current_price = close_prices.iloc[-1]
                         year_high = close_prices.max()
                         
-                        # 🛠️ नया ब्रेकआउट लॉजिक
                         if current_price >= year_high:
                             status_label = "🚀 NEW 52W HIGH"
                         elif current_price >= (year_high * 0.98):
@@ -160,8 +130,10 @@ def scan_52w_high_stocks():
                             "52W High": f"₹{year_high:,.2f}",
                             "Status": status_label
                         })
-                except Exception: continue
-    except Exception: pass
+                except Exception:
+                    continue
+    except Exception:
+        pass
     return pd.DataFrame(breakout_list)
 
 def get_index_data():
@@ -226,7 +198,6 @@ def render_header():
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 20px;">🚩 STOCK BY DSD AI</h1>', unsafe_allow_html=True)
     st.markdown('<p style="text-align: center; color: #94A3B8 !important; font-size: 1rem; margin-bottom: 30px;">Professional AI Market Intelligence Terminal</p>', unsafe_allow_html=True)
 
-# 🛠️ SIDEBAR WAPAS AA GAYA
 def render_sidebar():
     with st.sidebar:
         st.markdown('<h2 style="color:#FFFFFF !important;">📊 Navigation</h2>', unsafe_allow_html=True)
@@ -255,8 +226,9 @@ def render_sidebar():
                             <div style="color:#94A3B8 !important; font-size:0.85rem; margin-top:4px;">₹{g['current']:,.2f}</div>
                         </div>
                         """, unsafe_allow_html=True)
-                else: st.write("No gainers currently.")
-                
+                else:
+                    st.write("No gainers currently.")
+                    
             with trend_tab2:
                 if losers:
                     for ls in losers:
@@ -269,7 +241,8 @@ def render_sidebar():
                             <div style="color:#94A3B8 !important; font-size:0.85rem; margin-top:4px;">₹{ls['current']:,.2f}</div>
                         </div>
                         """, unsafe_allow_html=True)
-                else: st.write("No losers currently.")
+                else:
+                    st.write("No losers currently.")
 
         return symbol
 
@@ -304,7 +277,8 @@ def render_dashboard():
                     _render_alert(f"🟢 <b>MOMENTUM ALERT:</b> {symbol} कल के High (₹{yesterday_high:,.2f}) को पार कर चुका है! (Current: ₹{current_price:,.2f})", "success")
                 else:
                     _render_alert(f"⚪ <b>NO BREAKOUT YET:</b> {symbol} अभी कल के High (₹{yesterday_high:,.2f}) के नीचे ट्रेड कर रहा है।", "neutral")
-        except: pass
+        except Exception:
+            pass
 
         col1, col2 = st.columns(2)
         with col1:
@@ -332,7 +306,8 @@ def render_dashboard():
                         title_font=dict(color='#FFFFFF')
                     )
                     st.plotly_chart(fig, use_container_width=True)
-            except: pass
+            except Exception:
+                pass
                 
         with tab2:
             try:
@@ -349,7 +324,8 @@ def render_dashboard():
                 roe = info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0
                 roe_color = "🟢" if roe > 15 else "🔴" if roe < 5 else "⚪"
                 f_col3.markdown(f'<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{roe_color} ROE</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(roe,2)}%</div></div>', unsafe_allow_html=True)
-            except: pass
+            except Exception:
+                pass
                 
         with tab3:
             try:
@@ -358,9 +334,12 @@ def render_dashboard():
                 
                 try:
                     insider = ticker.insider_transactions
-                    if insider is not None and not insider.empty: _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की हालिया गतिविधि दर्ज की गई है। सावधान रहें!", "error")
-                    else: _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई नेगेटिव सिग्नल नहीं है।", "success")
-                except: _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई अलर्ट नहीं है।", "success")
+                    if insider is not None and not insider.empty: 
+                        _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की हालिया गतिविधि दर्ज की गई है। सावधान रहें!", "error")
+                    else: 
+                        _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई नेगेटिव सिग्नल नहीं है।", "success")
+                except Exception: 
+                    _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई अलर्ट नहीं है।", "success")
                 
                 major_holders = ticker.major_holders
                 if major_holders is not None and not major_holders.empty:
@@ -370,4 +349,9 @@ def render_dashboard():
                         df_m.columns = ["Category", "Value"]
                     elif len(df_m.columns) >= 2:
                         df_m.columns = ["Value", "Category"]
-                        df_m = df_
+                        df_m = df_m[["Category", "Value"]]
+                    
+                    df_m["Category"] = df_m["Category"].replace({
+                        "insidersPercentHeld": "👔 Promoter Holding",
+                        "institutionsPercentHeld": "🏦 Institutional Holding",
+                        "institution
