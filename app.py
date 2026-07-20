@@ -1,6 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
-Ultra Premium Dark Mode UI (Custom HTML Built) with Sidebar
+Ultra Premium Dark Mode UI with Sidebar
 """
 import streamlit as st
 import json
@@ -73,7 +73,7 @@ def get_live_index_data():
                 prev_close, curr_val = hist['Close'].iloc[-2], hist['Close'].iloc[-1]
                 change = curr_val - prev_close
                 results[name] = {"value": curr_val, "change": change, "change_percent": (change / prev_close) * 100}
-        except Exception:
+        except: 
             pass
     return results
 
@@ -93,14 +93,14 @@ def get_live_trending_fo():
                     curr_price = s_data.iloc[-1]
                     pct_change = ((curr_price - prev_close) / prev_close) * 100
                     changes.append({"symbol": stock.replace(".NS", ""), "current": round(curr_price, 2), "pct": round(pct_change, 2)})
-            except Exception:
+            except: 
                 continue
                 
         changes = sorted(changes, key=lambda x: x['pct'], reverse=True)
         gainers = [c for c in changes if c['pct'] > 0][:5]
         losers = sorted([c for c in changes if c['pct'] < 0], key=lambda x: x['pct'])[:5] 
         return {"gainers": gainers, "losers": losers}
-    except Exception:
+    except: 
         return {"gainers": [], "losers": []}
 
 @st.cache_data(ttl=86400)
@@ -130,21 +130,12 @@ def scan_52w_high_stocks():
                             "52W High": f"₹{year_high:,.2f}",
                             "Status": status_label
                         })
-                except Exception:
+                except: 
                     continue
-    except Exception:
+    except: 
         pass
     return pd.DataFrame(breakout_list)
 
-def get_index_data():
-    return json.dumps({
-        "NIFTY50": {"value": 24330.30, "change": 261.55, "change_percent": 1.05},
-        "SENSEX": {"value": 78150.50, "change": 964.59, "change_percent": 1.25},
-        "BANKNIFTY": {"value": 58520.10, "change": 939.15, "change_percent": 1.60},
-        "NIFTYIT": {"value": 29220.80, "change": 504.00, "change_percent": 1.75}
-    })
-
-# --- UI COMPONENTS ---
 def _render_custom_metric(label, value, change, pct):
     color = "#10B981" if change >= 0 else "#EF4444"
     arrow = "↑" if change >= 0 else "↓"
@@ -193,10 +184,6 @@ def _render_range_bar(label, low, high, current):
     </div>
     """
     st.markdown(html_content, unsafe_allow_html=True)
-
-def render_header():
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 20px;">🚩 STOCK BY DSD AI</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align: center; color: #94A3B8 !important; font-size: 1rem; margin-bottom: 30px;">Professional AI Market Intelligence Terminal</p>', unsafe_allow_html=True)
 
 def render_sidebar():
     with st.sidebar:
@@ -258,7 +245,9 @@ def render_market_overview():
                     _render_custom_metric(name, data["value"], data["change"], data["change_percent"])
 
 def render_dashboard():
-    render_header()
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 20px;">🚩 STOCK BY DSD AI</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align: center; color: #94A3B8 !important; font-size: 1rem; margin-bottom: 30px;">Professional AI Market Intelligence Terminal</p>', unsafe_allow_html=True)
+    
     render_market_overview()
     st.markdown("<br><br>", unsafe_allow_html=True)
     
@@ -277,7 +266,7 @@ def render_dashboard():
                     _render_alert(f"🟢 <b>MOMENTUM ALERT:</b> {symbol} कल के High (₹{yesterday_high:,.2f}) को पार कर चुका है! (Current: ₹{current_price:,.2f})", "success")
                 else:
                     _render_alert(f"⚪ <b>NO BREAKOUT YET:</b> {symbol} अभी कल के High (₹{yesterday_high:,.2f}) के नीचे ट्रेड कर रहा है।", "neutral")
-        except Exception:
+        except: 
             pass
 
         col1, col2 = st.columns(2)
@@ -306,7 +295,7 @@ def render_dashboard():
                         title_font=dict(color='#FFFFFF')
                     )
                     st.plotly_chart(fig, use_container_width=True)
-            except Exception:
+            except: 
                 pass
                 
         with tab2:
@@ -324,7 +313,7 @@ def render_dashboard():
                 roe = info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0
                 roe_color = "🟢" if roe > 15 else "🔴" if roe < 5 else "⚪"
                 f_col3.markdown(f'<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{roe_color} ROE</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(roe,2)}%</div></div>', unsafe_allow_html=True)
-            except Exception:
+            except: 
                 pass
                 
         with tab3:
@@ -338,7 +327,7 @@ def render_dashboard():
                         _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की हालिया गतिविधि दर्ज की गई है। सावधान रहें!", "error")
                     else: 
                         _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई नेगेटिव सिग्नल नहीं है।", "success")
-                except Exception: 
+                except: 
                     _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई अलर्ट नहीं है।", "success")
                 
                 major_holders = ticker.major_holders
@@ -351,7 +340,18 @@ def render_dashboard():
                         df_m.columns = ["Value", "Category"]
                         df_m = df_m[["Category", "Value"]]
                     
-                    df_m["Category"] = df_m["Category"].replace({
+                    replace_mapping = {
                         "insidersPercentHeld": "👔 Promoter Holding",
                         "institutionsPercentHeld": "🏦 Institutional Holding",
-                        "institution
+                        "institutionsFloatPercentHeld": "🌊 Market Float by Institutions",
+                        "institutionsCount": "🏢 Total Institutions"
+                    }
+                    df_m["Category"] = df_m["Category"].replace(replace_mapping)
+                    st.dataframe(df_m, use_container_width=True, hide_index=True)
+            except: 
+                pass
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        with st.expander("🔥 DSD 52-Week High Master Radar", expanded=True):
+            st.markdown('<p style="color:#94A3B8 !important;">इस लिस्ट में सिर्फ 
