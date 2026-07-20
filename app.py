@@ -1,6 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
-Ultra Premium Dark Mode UI with Sidebar (Error-Free Version)
+Error-Free Premium Dark Mode UI
 """
 import streamlit as st
 import json
@@ -74,7 +74,7 @@ def get_live_index_data():
                 curr_val = hist['Close'].iloc[-1]
                 change = curr_val - prev_close
                 results[name] = {"value": curr_val, "change": change, "change_percent": (change / prev_close) * 100}
-        except: 
+        except Exception: 
             pass
     return results
 
@@ -94,14 +94,14 @@ def get_live_trending_fo():
                     curr_price = s_data.iloc[-1]
                     pct_change = ((curr_price - prev_close) / prev_close) * 100
                     changes.append({"symbol": stock.replace(".NS", ""), "current": round(curr_price, 2), "pct": round(pct_change, 2)})
-            except: 
+            except Exception: 
                 continue
                 
         changes = sorted(changes, key=lambda x: x['pct'], reverse=True)
         gainers = [c for c in changes if c['pct'] > 0][:5]
         losers = sorted([c for c in changes if c['pct'] < 0], key=lambda x: x['pct'])[:5] 
         return {"gainers": gainers, "losers": losers}
-    except: 
+    except Exception: 
         return {"gainers": [], "losers": []}
 
 @st.cache_data(ttl=86400)
@@ -131,9 +131,9 @@ def scan_52w_high_stocks():
                             "52W High": f"₹{year_high:,.2f}",
                             "Status": status_label
                         })
-                except: 
+                except Exception: 
                     continue
-    except: 
+    except Exception: 
         pass
     return pd.DataFrame(breakout_list)
 
@@ -186,13 +186,17 @@ def _render_range_bar(label, low, high, current):
     """
     st.markdown(html_content, unsafe_allow_html=True)
 
+def render_header():
+    st.markdown("""<h1 style="font-size: 2.8rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 20px;">🚩 STOCK BY DSD AI</h1>""", unsafe_allow_html=True)
+    st.markdown("""<p style="text-align: center; color: #94A3B8 !important; font-size: 1rem; margin-bottom: 30px;">Professional AI Market Intelligence Terminal</p>""", unsafe_allow_html=True)
+
 def render_sidebar():
     with st.sidebar:
-        st.markdown('<h2 style="color:#FFFFFF !important;">📊 Navigation</h2>', unsafe_allow_html=True)
+        st.markdown("""<h2 style="color:#FFFFFF !important;">📊 Navigation</h2>""", unsafe_allow_html=True)
         symbol = st.selectbox("🔍 Search F&O Stock", options=FO_STOCKS_LIST, index=FO_STOCKS_LIST.index("RELIANCE"))
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown('<h3 style="color:#FFFFFF !important; font-size:1.2rem;">🔥 Live F&O Action</h3>', unsafe_allow_html=True)
+        st.markdown("""<br>""", unsafe_allow_html=True)
+        st.markdown("""<h3 style="color:#FFFFFF !important; font-size:1.2rem;">🔥 Live F&O Action</h3>""", unsafe_allow_html=True)
         
         with st.spinner("Fetching Live Market..."):
             trending = get_live_trending_fo()
@@ -246,16 +250,14 @@ def render_market_overview():
                     _render_custom_metric(name, data["value"], data["change"], data["change_percent"])
 
 def render_dashboard():
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 20px;">🚩 STOCK BY DSD AI</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align: center; color: #94A3B8 !important; font-size: 1rem; margin-bottom: 30px;">Professional AI Market Intelligence Terminal</p>', unsafe_allow_html=True)
-    
+    render_header()
     render_market_overview()
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("""<br><br>""", unsafe_allow_html=True)
     
     symbol = render_sidebar()
     
     if symbol:
-        st.markdown(f'<h2 style="color:#FFFFFF !important;">💎 Terminal Analysis: <span style="color:#D4AF37 !important;">{symbol}</span></h2>', unsafe_allow_html=True)
+        st.markdown(f"""<h2 style="color:#FFFFFF !important;">💎 Terminal Analysis: <span style="color:#D4AF37 !important;">{symbol}</span></h2>""", unsafe_allow_html=True)
         
         try:
             _hist = yf.Ticker(f"{symbol}.NS").history(period="2d")
@@ -267,7 +269,7 @@ def render_dashboard():
                     _render_alert(f"🟢 <b>MOMENTUM ALERT:</b> {symbol} कल के High (₹{yesterday_high:,.2f}) को पार कर चुका है! (Current: ₹{current_price:,.2f})", "success")
                 else:
                     _render_alert(f"⚪ <b>NO BREAKOUT YET:</b> {symbol} अभी कल के High (₹{yesterday_high:,.2f}) के नीचे ट्रेड कर रहा है।", "neutral")
-        except: 
+        except Exception: 
             pass
 
         col1, col2 = st.columns(2)
@@ -276,7 +278,7 @@ def render_dashboard():
         with col2:
             _render_range_bar("52-Week", 2100.00, 3100.00, 2495.50)
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("""<br>""", unsafe_allow_html=True)
         tab1, tab2, tab3 = st.tabs(["📊 Technical Chart", "🧠 Fundamental Health", "🏢 Ownership & Alerts"])
         
         with tab1:
@@ -296,7 +298,7 @@ def render_dashboard():
                         title_font=dict(color='#FFFFFF')
                     )
                     st.plotly_chart(fig, use_container_width=True)
-            except: 
+            except Exception: 
                 pass
                 
         with tab2:
@@ -305,22 +307,22 @@ def render_dashboard():
                 f_col1, f_col2, f_col3 = st.columns(3)
                 
                 mcap = info.get('marketCap')
-                f_col1.markdown(f'<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">Market Cap</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">₹{mcap/10000000:,.2f} Cr</div></div>', unsafe_allow_html=True)
+                f_col1.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">Market Cap</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">₹{mcap/10000000:,.2f} Cr</div></div>""", unsafe_allow_html=True)
                 
                 pe = info.get('trailingPE', 0)
                 pe_color = "🟢" if pe and pe < 25 else "🔴" if pe and pe > 40 else "⚪"
-                f_col2.markdown(f'<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{pe_color} P/E Ratio</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(pe,2) if pe else "N/A"}</div></div>', unsafe_allow_html=True)
+                f_col2.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{pe_color} P/E Ratio</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(pe,2) if pe else "N/A"}</div></div>""", unsafe_allow_html=True)
                 
                 roe = info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0
                 roe_color = "🟢" if roe > 15 else "🔴" if roe < 5 else "⚪"
-                f_col3.markdown(f'<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{roe_color} ROE</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(roe,2)}%</div></div>', unsafe_allow_html=True)
-            except: 
+                f_col3.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{roe_color} ROE</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(roe,2)}%</div></div>""", unsafe_allow_html=True)
+            except Exception: 
                 pass
                 
         with tab3:
             try:
                 ticker = yf.Ticker(f"{symbol}.NS")
-                st.markdown('<h3 style="color:#FFFFFF !important;">🚨 Promoter Trust Radar</h3>', unsafe_allow_html=True)
+                st.markdown("""<h3 style="color:#FFFFFF !important;">🚨 Promoter Trust Radar</h3>""", unsafe_allow_html=True)
                 
                 try:
                     insider = ticker.insider_transactions
@@ -328,7 +330,7 @@ def render_dashboard():
                         _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की हालिया गतिविधि दर्ज की गई है। सावधान रहें!", "error")
                     else: 
                         _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई नेगेटिव सिग्नल नहीं है।", "success")
-                except: 
+                except Exception: 
                     _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई अलर्ट नहीं है।", "success")
                 
                 major_holders = ticker.major_holders
@@ -349,10 +351,7 @@ def render_dashboard():
                     }
                     df_m["Category"] = df_m["Category"].replace(replace_mapping)
                     st.dataframe(df_m, use_container_width=True, hide_index=True)
-            except: 
+            except Exception: 
                 pass
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        with st.expander("🔥 DSD 52-Week High Master Radar", expanded=True):
-            st.markdown('<p style="color:#94
+        st.markdown("""<br
