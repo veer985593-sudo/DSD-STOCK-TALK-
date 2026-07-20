@@ -1,6 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
-Error-Free Premium Dark Mode UI
+Mobile Optimized Front-Page UI (Error-Free)
 """
 import streamlit as st
 import json
@@ -13,7 +13,7 @@ st.set_page_config(
     page_title="STOCK BY DSD AI",
     page_icon="🚩",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed", # साइडबार हमेशा बंद रहेगा
 )
 
 # --- 💎 BULLETPROOF CSS ---
@@ -21,11 +21,17 @@ st.markdown("""
 <style>
     .stApp, .main { background-color: #0b0f19 !important; }
     p, span, div, label, h1, h2, h3, h4, h5, h6, li { color: #F8FAFC !important; }
-    [data-testid="stSidebar"] { background-color: #121826 !important; border-right: 1px solid #334155 !important; }
+    
+    /* Hide Sidebar Completely */
+    [data-testid="collapsedControl"] { display: none !important; }
+    section[data-testid="stSidebar"] { display: none !important; }
+
+    /* Tabs Styling */
     div[role="tablist"] button { background-color: transparent !important; }
     div[role="tablist"] button p { color: #94A3B8 !important; font-size: 1.05rem !important; }
     div[role="tablist"] button[aria-selected="true"] p { color: #D4AF37 !important; font-weight: 800 !important; }
     div[role="tablist"] button[aria-selected="true"] { border-bottom-color: #D4AF37 !important; }
+    
     [data-testid="stDataFrame"] div, [data-testid="stDataFrame"] th, [data-testid="stDataFrame"] td {
         color: #FFFFFF !important; background-color: transparent !important;
     }
@@ -61,9 +67,11 @@ FO_STOCKS_LIST = [
 ]
 FO_STOCKS_LIST.sort()
 
+# --- 📡 DATA FETCHING ---
 @st.cache_data(ttl=60) 
 def get_live_index_data():
-    index_tickers = {"NIFTY 50": "^NSEI", "SENSEX": "^BSESN", "BANK NIFTY": "^NSEBANK", "NIFTY IT": "^CNXIT"}
+    # 🛠️ NIFTY IT हटाकर INDIA VIX लगा दिया गया है
+    index_tickers = {"NIFTY 50": "^NSEI", "SENSEX": "^BSESN", "BANK NIFTY": "^NSEBANK", "INDIA VIX": "^INDIAVIX"}
     results = {}
     for name, sym in index_tickers.items():
         try:
@@ -73,7 +81,8 @@ def get_live_index_data():
                 prev_close = hist['Close'].iloc[-2]
                 curr_val = hist['Close'].iloc[-1]
                 change = curr_val - prev_close
-                results[name] = {"value": curr_val, "change": change, "change_percent": (change / prev_close) * 100}
+                pct = (change / prev_close) * 100
+                results[name] = {"value": curr_val, "change": change, "change_percent": pct}
         except Exception: 
             pass
     return results
@@ -137,10 +146,18 @@ def scan_52w_high_stocks():
         pass
     return pd.DataFrame(breakout_list)
 
+# --- UI COMPONENTS ---
 def _render_custom_metric(label, value, change, pct):
-    color = "#10B981" if change >= 0 else "#EF4444"
-    arrow = "↑" if change >= 0 else "↓"
-    sign = "+" if change >= 0 else ""
+    # 🛠️ यहाँ लाल/हरे का लॉजिक बिल्कुल पक्का कर दिया गया है
+    if change >= 0:
+        color = "#10B981" # Green
+        arrow = "↑"
+        sign = "+"
+    else:
+        color = "#EF4444" # Red
+        arrow = "↓"
+        sign = "" # माइनस की वैल्यू में पहले से '-' होता है
+        
     html = f"""
     <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 10px;">
         <div style="color: #94A3B8 !important; font-size: 0.9rem; font-weight: 600; margin-bottom: 5px; text-transform: uppercase;">{label}</div>
@@ -186,61 +203,17 @@ def _render_range_bar(label, low, high, current):
     """
     st.markdown(html_content, unsafe_allow_html=True)
 
-def render_header():
-    st.markdown("""<h1 style="font-size: 2.8rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 20px;">🚩 STOCK BY DSD AI</h1>""", unsafe_allow_html=True)
-    st.markdown("""<p style="text-align: center; color: #94A3B8 !important; font-size: 1rem; margin-bottom: 30px;">Professional AI Market Intelligence Terminal</p>""", unsafe_allow_html=True)
 
-def render_sidebar():
-    with st.sidebar:
-        st.markdown("""<h2 style="color:#FFFFFF !important;">📊 Navigation</h2>""", unsafe_allow_html=True)
-        symbol = st.selectbox("🔍 Search F&O Stock", options=FO_STOCKS_LIST, index=FO_STOCKS_LIST.index("RELIANCE"))
-        
-        st.markdown("""<br>""", unsafe_allow_html=True)
-        st.markdown("""<h3 style="color:#FFFFFF !important; font-size:1.2rem;">🔥 Live F&O Action</h3>""", unsafe_allow_html=True)
-        
-        with st.spinner("Fetching Live Market..."):
-            trending = get_live_trending_fo()
-            gainers = trending.get("gainers", [])
-            losers = trending.get("losers", [])
-
-        if gainers or losers:
-            trend_tab1, trend_tab2 = st.tabs(["🟢 Gainers", "🔴 Losers"])
-            
-            with trend_tab1:
-                if gainers:
-                    for g in gainers:
-                        st.markdown(f"""
-                        <div style="background:rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="color:#FFFFFF !important; font-weight:bold; font-size:0.95rem;">{g['symbol']}</span>
-                                <span style="color:#10B981 !important; font-weight:bold; font-size:0.9rem;">+{g['pct']}%</span>
-                            </div>
-                            <div style="color:#94A3B8 !important; font-size:0.85rem; margin-top:4px;">₹{g['current']:,.2f}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.write("No gainers currently.")
-                    
-            with trend_tab2:
-                if losers:
-                    for ls in losers:
-                        st.markdown(f"""
-                        <div style="background:rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="color:#FFFFFF !important; font-weight:bold; font-size:0.95rem;">{ls['symbol']}</span>
-                                <span style="color:#EF4444 !important; font-weight:bold; font-size:0.9rem;">{ls['pct']}%</span>
-                            </div>
-                            <div style="color:#94A3B8 !important; font-size:0.85rem; margin-top:4px;">₹{ls['current']:,.2f}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.write("No losers currently.")
-
-        return symbol
-
-def render_market_overview():
+# --- MAIN APP LAYOUT ---
+def render_dashboard():
+    # 1. HEADER
+    st.markdown("""<h1 style="font-size: 2.5rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 10px;">🚩 STOCK BY DSD AI</h1>""", unsafe_allow_html=True)
+    st.markdown("""<p style="text-align: center; color: #94A3B8 !important; font-size: 0.9rem; margin-bottom: 20px;">Professional AI Market Intelligence Terminal</p>""", unsafe_allow_html=True)
+    
+    # 2. MARKET OVERVIEW (Nifty, Sensex, Bank Nifty, INDIA VIX)
     indices = get_live_index_data()
     if indices:
+        # मोबाइल के लिए 2-2 की लाइन
         col1, col2 = st.columns(2)
         col3, col4 = st.columns(2)
         cols = [col1, col2, col3, col4]
@@ -248,14 +221,58 @@ def render_market_overview():
             if idx < 4:
                 with cols[idx]:
                     _render_custom_metric(name, data["value"], data["change"], data["change_percent"])
+                    
+    st.markdown("""<br>""", unsafe_allow_html=True)
 
-def render_dashboard():
-    render_header()
-    render_market_overview()
-    st.markdown("""<br><br>""", unsafe_allow_html=True)
+    # 3. 🔍 SEARCH BAR (अब बिल्कुल सामने मेन स्क्रीन पर)
+    st.markdown("""<h3 style="color:#FFFFFF !important; font-size:1.2rem;">🔍 Search F&O Stock</h3>""", unsafe_allow_html=True)
+    symbol = st.selectbox("Select Stock", options=FO_STOCKS_LIST, index=FO_STOCKS_LIST.index("RELIANCE"), label_visibility="collapsed")
     
-    symbol = render_sidebar()
-    
+    st.markdown("""<br>""", unsafe_allow_html=True)
+
+    # 4. 🔥 LIVE ACTION: GAINERS & LOSERS (अब बिल्कुल सामने)
+    st.markdown("""<h3 style="color:#FFFFFF !important; font-size:1.2rem;">🔥 Live F&O Action</h3>""", unsafe_allow_html=True)
+    with st.spinner("Fetching Live Market..."):
+        trending = get_live_trending_fo()
+        gainers = trending.get("gainers", [])
+        losers = trending.get("losers", [])
+
+    if gainers or losers:
+        trend_tab1, trend_tab2 = st.tabs(["🟢 Top Gainers", "🔴 Top Losers"])
+        
+        with trend_tab1:
+            if gainers:
+                for g in gainers:
+                    st.markdown(f"""
+                    <div style="background:rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:#FFFFFF !important; font-weight:bold; font-size:1rem;">{g['symbol']}</span>
+                            <span style="color:#10B981 !important; font-weight:bold; font-size:1rem;">+{g['pct']}%</span>
+                        </div>
+                        <div style="color:#94A3B8 !important; font-size:0.85rem; margin-top:4px;">₹{g['current']:,.2f}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.write("No gainers currently.")
+                
+        with trend_tab2:
+            if losers:
+                for ls in losers:
+                    st.markdown(f"""
+                    <div style="background:rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:#FFFFFF !important; font-weight:bold; font-size:1rem;">{ls['symbol']}</span>
+                            <span style="color:#EF4444 !important; font-weight:bold; font-size:1rem;">{ls['pct']}%</span>
+                        </div>
+                        <div style="color:#94A3B8 !important; font-size:0.85rem; margin-top:4px;">₹{ls['current']:,.2f}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.write("No losers currently.")
+
+    st.markdown("""<hr style="border-color:#1E293B;">""", unsafe_allow_html=True)
+
+    # 5. STOCK ANALYSIS SECTION
     if symbol:
         st.markdown(f"""<h2 style="color:#FFFFFF !important;">💎 Terminal Analysis: <span style="color:#D4AF37 !important;">{symbol}</span></h2>""", unsafe_allow_html=True)
         
@@ -279,7 +296,7 @@ def render_dashboard():
             _render_range_bar("52-Week", 2100.00, 3100.00, 2495.50)
 
         st.markdown("""<br>""", unsafe_allow_html=True)
-        tab1, tab2, tab3 = st.tabs(["📊 Technical Chart", "🧠 Fundamental Health", "🏢 Ownership & Alerts"])
+        tab1, tab2, tab3 = st.tabs(["📊 Chart", "🧠 Fundamentals", "🏢 Alerts"])
         
         with tab1:
             try:
@@ -304,18 +321,17 @@ def render_dashboard():
         with tab2:
             try:
                 info = yf.Ticker(f"{symbol}.NS").info
-                f_col1, f_col2, f_col3 = st.columns(3)
                 
                 mcap = info.get('marketCap')
-                f_col1.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">Market Cap</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">₹{mcap/10000000:,.2f} Cr</div></div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">Market Cap</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">₹{mcap/10000000:,.2f} Cr</div></div>""", unsafe_allow_html=True)
                 
                 pe = info.get('trailingPE', 0)
                 pe_color = "🟢" if pe and pe < 25 else "🔴" if pe and pe > 40 else "⚪"
-                f_col2.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{pe_color} P/E Ratio</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(pe,2) if pe else "N/A"}</div></div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{pe_color} P/E Ratio</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(pe,2) if pe else "N/A"}</div></div>""", unsafe_allow_html=True)
                 
                 roe = info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0
                 roe_color = "🟢" if roe > 15 else "🔴" if roe < 5 else "⚪"
-                f_col3.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{roe_color} ROE</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(roe,2)}%</div></div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{roe_color} ROE</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(roe,2)}%</div></div>""", unsafe_allow_html=True)
             except Exception: 
                 pass
                 
@@ -342,11 +358,10 @@ def render_dashboard():
                     elif len(df_m.columns) >= 2:
                         df_m.columns = ["Value", "Category"]
                         df_m = df_m[["Category", "Value"]]
-                    
                     replace_mapping = {
                         "insidersPercentHeld": "👔 Promoter Holding",
                         "institutionsPercentHeld": "🏦 Institutional Holding",
-                        "institutionsFloatPercentHeld": "🌊 Market Float by Institutions",
+                        "institutionsFloatPercentHeld": "🌊 Market Float",
                         "institutionsCount": "🏢 Total Institutions"
                     }
                     df_m["Category"] = df_m["Category"].replace(replace_mapping)
@@ -356,6 +371,7 @@ def render_dashboard():
 
         st.markdown("""<br>""", unsafe_allow_html=True)
         
+        # 6. 52 WEEK HIGH RADAR
         with st.expander("🔥 DSD 52-Week High Master Radar", expanded=True):
             st.markdown("""<p style="color:#94A3B8 !important;">इस लिस्ट में सिर्फ वही F&O स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर के करीब हैं।</p>""", unsafe_allow_html=True)
             with st.spinner("Scanning ALL F&O stocks live..."):
@@ -368,3 +384,4 @@ def render_dashboard():
 
 if __name__ == "__main__":
     render_dashboard()
+                    
