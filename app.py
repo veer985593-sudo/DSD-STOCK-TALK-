@@ -1,6 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
-Mobile Optimized Front-Page UI (Error-Free)
+Mobile Optimized Front-Page UI (Perfect Colors & VIX)
 """
 import streamlit as st
 import json
@@ -13,14 +13,15 @@ st.set_page_config(
     page_title="STOCK BY DSD AI",
     page_icon="🚩",
     layout="wide",
-    initial_sidebar_state="collapsed", # साइडबार हमेशा बंद रहेगा
+    initial_sidebar_state="collapsed", 
 )
 
-# --- 💎 BULLETPROOF CSS ---
+# --- 💎 BULLETPROOF CSS WITH CUSTOM CLASSES ---
 st.markdown("""
 <style>
+    /* Base Background */
     .stApp, .main { background-color: #0b0f19 !important; }
-    p, span, div, label, h1, h2, h3, h4, h5, h6, li { color: #F8FAFC !important; }
+    p, span, div, label, h1, h2, h3, h4, h5, h6, li { color: #F8FAFC; }
     
     /* Hide Sidebar Completely */
     [data-testid="collapsedControl"] { display: none !important; }
@@ -32,10 +33,36 @@ st.markdown("""
     div[role="tablist"] button[aria-selected="true"] p { color: #D4AF37 !important; font-weight: 800 !important; }
     div[role="tablist"] button[aria-selected="true"] { border-bottom-color: #D4AF37 !important; }
     
+    /* Search Box */
+    .stSelectbox div[data-baseweb="select"] { background-color: #121826 !important; border: 1px solid #D4AF37 !important; border-radius: 8px; }
+    .stSelectbox div[data-baseweb="select"] span { color: #FFFFFF !important; font-weight: bold; }
+    
+    /* Table Styling */
     [data-testid="stDataFrame"] div, [data-testid="stDataFrame"] th, [data-testid="stDataFrame"] td {
         color: #FFFFFF !important; background-color: transparent !important;
     }
-    .stSelectbox div[data-baseweb="select"] span { color: #000000 !important; }
+    
+    /* 🚀 CUSTOM COLOR CLASSES (This fixes the White text issue 100%) */
+    .txt-green { color: #10B981 !important; font-weight: 800 !important; }
+    .txt-red { color: #EF4444 !important; font-weight: 800 !important; }
+    .txt-white { color: #FFFFFF !important; font-weight: 800 !important; }
+    .txt-gray { color: #94A3B8 !important; font-weight: 600 !important; }
+    
+    .metric-box {
+        background: rgba(30, 41, 59, 0.7); 
+        border: 1px solid rgba(255, 255, 255, 0.05); 
+        border-radius: 12px; 
+        padding: 15px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+        margin-bottom: 10px;
+    }
+    .trend-box {
+        background: rgba(30, 41, 59, 0.7); 
+        border: 1px solid rgba(255,255,255,0.05); 
+        border-radius: 8px; 
+        padding: 12px; 
+        margin-bottom: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -148,21 +175,21 @@ def scan_52w_high_stocks():
 
 # --- UI COMPONENTS ---
 def _render_custom_metric(label, value, change, pct):
-    # 🛠️ यहाँ लाल/हरे का लॉजिक बिल्कुल पक्का कर दिया गया है
+    # 🛠️ पक्का कलर लॉजिक: प्लस है तो ग्रीन (↑), माइनस है तो रेड (↓)
     if change >= 0:
-        color = "#10B981" # Green
+        color_class = "txt-green"
         arrow = "↑"
         sign = "+"
     else:
-        color = "#EF4444" # Red
+        color_class = "txt-red"
         arrow = "↓"
         sign = "" # माइनस की वैल्यू में पहले से '-' होता है
         
     html = f"""
-    <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 10px;">
-        <div style="color: #94A3B8 !important; font-size: 0.9rem; font-weight: 600; margin-bottom: 5px; text-transform: uppercase;">{label}</div>
-        <div style="color: #FFFFFF !important; font-size: 1.8rem; font-weight: 800;">{value:,.2f}</div>
-        <div style="color: {color} !important; font-size: 0.85rem; margin-top: 5px; font-weight: bold;">{arrow} {sign}{change:,.2f} ({sign}{pct:.2f}%)</div>
+    <div class="metric-box">
+        <div class="txt-gray" style="font-size: 0.85rem; text-transform: uppercase;">{label}</div>
+        <div class="txt-white" style="font-size: 1.7rem;">{value:,.2f}</div>
+        <div class="{color_class}" style="font-size: 0.9rem; margin-top: 5px;">{arrow} {sign}{change:,.2f} ({sign}{pct:.2f}%)</div>
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
@@ -186,23 +213,22 @@ def _render_range_bar(label, low, high, current):
     if high <= low or high == 0: return
     pct = max(0, min(100, ((current - low) / (high - low)) * 100))
     html_content = f"""
-    <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 10px;">
-        <h4 style="color: #FFFFFF !important; margin-top:0; margin-bottom:15px; font-size:1.1rem;">🎯 {label} Range</h4>
-        <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#94A3B8 !important; margin-bottom:8px;">
-            <span>Low: <b style="color:#FFFFFF !important;">₹{low:,.2f}</b></span>
-            <span>High: <b style="color:#FFFFFF !important;">₹{high:,.2f}</b></span>
+    <div class="metric-box">
+        <h4 class="txt-white" style="margin-top:0; margin-bottom:15px; font-size:1.1rem;">🎯 {label} Range</h4>
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:8px;">
+            <span class="txt-gray">Low: <b class="txt-white">₹{low:,.2f}</b></span>
+            <span class="txt-gray">High: <b class="txt-white">₹{high:,.2f}</b></span>
         </div>
         <div style="position:relative; height:6px; background:#1E293B; border-radius:3px; width:100%;">
             <div style="position:absolute; left:0; top:0; height:100%; width:{pct}%; background:linear-gradient(90deg, #EF4444, #F59E0B, #10B981); border-radius:3px;"></div>
             <div style="position:absolute; left:calc({pct}% - 6px); top:6px; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:8px solid #D4AF37;"></div>
         </div>
-        <div style="text-align:center; font-size:0.9rem; margin-top:16px; color:#F8FAFC !important;">
-            Current: <span style="color:#D4AF37 !important; font-weight:bold; font-size:1.1rem;">₹{current:,.2f}</span>
+        <div style="text-align:center; font-size:0.9rem; margin-top:16px;">
+            <span class="txt-white">Current:</span> <span style="color:#D4AF37 !important; font-weight:800; font-size:1.1rem;">₹{current:,.2f}</span>
         </div>
     </div>
     """
     st.markdown(html_content, unsafe_allow_html=True)
-
 
 # --- MAIN APP LAYOUT ---
 def render_dashboard():
@@ -213,7 +239,6 @@ def render_dashboard():
     # 2. MARKET OVERVIEW (Nifty, Sensex, Bank Nifty, INDIA VIX)
     indices = get_live_index_data()
     if indices:
-        # मोबाइल के लिए 2-2 की लाइन
         col1, col2 = st.columns(2)
         col3, col4 = st.columns(2)
         cols = [col1, col2, col3, col4]
@@ -224,14 +249,14 @@ def render_dashboard():
                     
     st.markdown("""<br>""", unsafe_allow_html=True)
 
-    # 3. 🔍 SEARCH BAR (अब बिल्कुल सामने मेन स्क्रीन पर)
-    st.markdown("""<h3 style="color:#FFFFFF !important; font-size:1.2rem;">🔍 Search F&O Stock</h3>""", unsafe_allow_html=True)
+    # 3. 🔍 SEARCH BAR (MAIN SCREEN)
+    st.markdown("""<h3 class="txt-white" style="font-size:1.2rem;">🔍 Search F&O Stock</h3>""", unsafe_allow_html=True)
     symbol = st.selectbox("Select Stock", options=FO_STOCKS_LIST, index=FO_STOCKS_LIST.index("RELIANCE"), label_visibility="collapsed")
     
     st.markdown("""<br>""", unsafe_allow_html=True)
 
-    # 4. 🔥 LIVE ACTION: GAINERS & LOSERS (अब बिल्कुल सामने)
-    st.markdown("""<h3 style="color:#FFFFFF !important; font-size:1.2rem;">🔥 Live F&O Action</h3>""", unsafe_allow_html=True)
+    # 4. 🔥 LIVE ACTION: GAINERS & LOSERS
+    st.markdown("""<h3 class="txt-white" style="font-size:1.2rem;">🔥 Live F&O Action</h3>""", unsafe_allow_html=True)
     with st.spinner("Fetching Live Market..."):
         trending = get_live_trending_fo()
         gainers = trending.get("gainers", [])
@@ -244,12 +269,12 @@ def render_dashboard():
             if gainers:
                 for g in gainers:
                     st.markdown(f"""
-                    <div style="background:rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                    <div class="trend-box">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color:#FFFFFF !important; font-weight:bold; font-size:1rem;">{g['symbol']}</span>
-                            <span style="color:#10B981 !important; font-weight:bold; font-size:1rem;">+{g['pct']}%</span>
+                            <span class="txt-white" style="font-size:1rem;">{g['symbol']}</span>
+                            <span class="txt-green" style="font-size:1rem;">↑ +{g['pct']}%</span>
                         </div>
-                        <div style="color:#94A3B8 !important; font-size:0.85rem; margin-top:4px;">₹{g['current']:,.2f}</div>
+                        <div class="txt-gray" style="font-size:0.85rem; margin-top:4px;">₹{g['current']:,.2f}</div>
                     </div>
                     """, unsafe_allow_html=True)
             else:
@@ -259,12 +284,12 @@ def render_dashboard():
             if losers:
                 for ls in losers:
                     st.markdown(f"""
-                    <div style="background:rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                    <div class="trend-box">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color:#FFFFFF !important; font-weight:bold; font-size:1rem;">{ls['symbol']}</span>
-                            <span style="color:#EF4444 !important; font-weight:bold; font-size:1rem;">{ls['pct']}%</span>
+                            <span class="txt-white" style="font-size:1rem;">{ls['symbol']}</span>
+                            <span class="txt-red" style="font-size:1rem;">↓ {ls['pct']}%</span>
                         </div>
-                        <div style="color:#94A3B8 !important; font-size:0.85rem; margin-top:4px;">₹{ls['current']:,.2f}</div>
+                        <div class="txt-gray" style="font-size:0.85rem; margin-top:4px;">₹{ls['current']:,.2f}</div>
                     </div>
                     """, unsafe_allow_html=True)
             else:
@@ -274,7 +299,7 @@ def render_dashboard():
 
     # 5. STOCK ANALYSIS SECTION
     if symbol:
-        st.markdown(f"""<h2 style="color:#FFFFFF !important;">💎 Terminal Analysis: <span style="color:#D4AF37 !important;">{symbol}</span></h2>""", unsafe_allow_html=True)
+        st.markdown(f"""<h2 class="txt-white">💎 Terminal Analysis: <span style="color:#D4AF37 !important;">{symbol}</span></h2>""", unsafe_allow_html=True)
         
         try:
             _hist = yf.Ticker(f"{symbol}.NS").history(period="2d")
@@ -323,22 +348,22 @@ def render_dashboard():
                 info = yf.Ticker(f"{symbol}.NS").info
                 
                 mcap = info.get('marketCap')
-                st.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">Market Cap</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">₹{mcap/10000000:,.2f} Cr</div></div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div class="metric-box"><div class="txt-gray" style="font-size:0.9rem;">Market Cap</div><div class="txt-white" style="font-size:1.4rem;">₹{mcap/10000000:,.2f} Cr</div></div>""", unsafe_allow_html=True)
                 
                 pe = info.get('trailingPE', 0)
-                pe_color = "🟢" if pe and pe < 25 else "🔴" if pe and pe > 40 else "⚪"
-                st.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{pe_color} P/E Ratio</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(pe,2) if pe else "N/A"}</div></div>""", unsafe_allow_html=True)
+                pe_color = "txt-green" if pe and pe < 25 else "txt-red" if pe and pe > 40 else "txt-white"
+                st.markdown(f"""<div class="metric-box"><div class="txt-gray" style="font-size:0.9rem;">P/E Ratio</div><div class="{pe_color}" style="font-size:1.4rem;">{round(pe,2) if pe else "N/A"}</div></div>""", unsafe_allow_html=True)
                 
                 roe = info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0
-                roe_color = "🟢" if roe > 15 else "🔴" if roe < 5 else "⚪"
-                st.markdown(f"""<div style="background:rgba(30,41,59,0.5); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;"><div style="color:#94A3B8 !important; font-size:0.9rem;">{roe_color} ROE</div><div style="color:#FFFFFF !important; font-size:1.4rem; font-weight:bold;">{round(roe,2)}%</div></div>""", unsafe_allow_html=True)
+                roe_color = "txt-green" if roe > 15 else "txt-red" if roe < 5 else "txt-white"
+                st.markdown(f"""<div class="metric-box"><div class="txt-gray" style="font-size:0.9rem;">ROE</div><div class="{roe_color}" style="font-size:1.4rem;">{round(roe,2)}%</div></div>""", unsafe_allow_html=True)
             except Exception: 
                 pass
                 
         with tab3:
             try:
                 ticker = yf.Ticker(f"{symbol}.NS")
-                st.markdown("""<h3 style="color:#FFFFFF !important;">🚨 Promoter Trust Radar</h3>""", unsafe_allow_html=True)
+                st.markdown("""<h3 class="txt-white">🚨 Promoter Trust Radar</h3>""", unsafe_allow_html=True)
                 
                 try:
                     insider = ticker.insider_transactions
@@ -358,6 +383,7 @@ def render_dashboard():
                     elif len(df_m.columns) >= 2:
                         df_m.columns = ["Value", "Category"]
                         df_m = df_m[["Category", "Value"]]
+                    
                     replace_mapping = {
                         "insidersPercentHeld": "👔 Promoter Holding",
                         "institutionsPercentHeld": "🏦 Institutional Holding",
@@ -373,7 +399,7 @@ def render_dashboard():
         
         # 6. 52 WEEK HIGH RADAR
         with st.expander("🔥 DSD 52-Week High Master Radar", expanded=True):
-            st.markdown("""<p style="color:#94A3B8 !important;">इस लिस्ट में सिर्फ वही F&O स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर के करीब हैं।</p>""", unsafe_allow_html=True)
+            st.markdown("""<p class="txt-gray">इस लिस्ट में सिर्फ वही F&O स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर के करीब हैं।</p>""", unsafe_allow_html=True)
             with st.spinner("Scanning ALL F&O stocks live..."):
                 breakout_df = scan_52w_high_stocks()
                 if not breakout_df.empty:
@@ -384,4 +410,3 @@ def render_dashboard():
 
 if __name__ == "__main__":
     render_dashboard()
-                    
