@@ -1,5 +1,4 @@
-"""
-STOCK BY DSD AI - Advanced Stock Research Assistant
+"""STOCK BY DSD AI - Advanced Stock Research Assistant
 Ultra Premium Dark Mode UI with Sidebar
 """
 import streamlit as st
