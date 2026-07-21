@@ -1,6 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
-Mobile Optimized Front-Page UI (Perfect Search Box & RVoL)
+Mobile Optimized | Fixed Search Visibility | 5-Min Auto Refresh | RVoL
 """
 import streamlit as st
 import json
@@ -15,6 +15,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed", 
 )
+
+# ⏳ 5-MINUTE AUTO REFRESH (300 Seconds)
+st.markdown('<meta http-equiv="refresh" content="300">', unsafe_allow_html=True)
 
 # --- 💎 BULLETPROOF CSS ---
 st.markdown("""
@@ -33,18 +36,20 @@ st.markdown("""
     div[role="tablist"] button[aria-selected="true"] p { color: #D4AF37 !important; font-weight: 800 !important; }
     div[role="tablist"] button[aria-selected="true"] { border-bottom-color: #D4AF37 !important; }
     
-    /* 🛠️ FIX FOR SEARCH BOX TYPING VISIBILITY */
-    .stSelectbox div[data-baseweb="select"] { background-color: #121826 !important; border: 1px solid #D4AF37 !important; border-radius: 8px; }
-    .stSelectbox div[data-baseweb="select"] span { color: #FFFFFF !important; font-weight: bold; }
-    input[aria-autocomplete="list"] { color: #FFFFFF !important; font-weight: bold !important; -webkit-text-fill-color: #FFFFFF !important; }
-    ul[role="listbox"] { background-color: #121826 !important; }
-    ul[role="listbox"] li { color: #FFFFFF !important; }
-    ul[role="listbox"] li[aria-selected="true"] { background-color: #1E293B !important; color: #D4AF37 !important; font-weight: bold; }
-    
     /* Table Styling */
     [data-testid="stDataFrame"] div, [data-testid="stDataFrame"] th, [data-testid="stDataFrame"] td {
         color: #FFFFFF !important; background-color: transparent !important;
     }
+    
+    /* 🛠️ ULTIMATE SEARCH BOX DROPDOWN FIX */
+    .stSelectbox div[data-baseweb="select"] { background-color: #121826 !important; border: 1px solid #D4AF37 !important; border-radius: 8px; }
+    .stSelectbox div[data-baseweb="select"] * { color: #FFFFFF !important; font-weight: bold; }
+    
+    /* Force Dropdown Menu to be Dark with White Text */
+    div[data-baseweb="popover"] > div { background-color: #121826 !important; border: 1px solid #D4AF37 !important; }
+    ul[data-baseweb="menu"] { background-color: #121826 !important; }
+    ul[data-baseweb="menu"] li { color: #FFFFFF !important; font-size: 1rem !important; background-color: transparent !important; }
+    ul[data-baseweb="menu"] li:hover { background-color: #1E293B !important; color: #D4AF37 !important; }
     
     /* Custom Color Classes */
     .txt-green { color: #10B981 !important; font-weight: 800 !important; }
@@ -135,7 +140,6 @@ def scan_52w_high_stocks():
     nifty_stocks = [f"{stock}.NS" for stock in FO_STOCKS_LIST]
     breakout_list = []
     try:
-        # 🛠️ RVoL कैलकुलेशन के लिए Close और Volume दोनों डेटा डाउनलोड कर रहे हैं
         data = yf.download(nifty_stocks, period="1y", progress=False)
         if not data.empty:
             for stock in nifty_stocks:
@@ -154,19 +158,18 @@ def scan_52w_high_stocks():
                         else:
                             continue
                             
-                        # 🛠️ Calculate RVoL (Relative Volume - 20 Day Average)
+                        # Calculate RVoL
                         current_vol = volumes.iloc[-1]
                         avg_vol_20 = volumes.iloc[-20:].mean()
                         rvol = current_vol / avg_vol_20 if avg_vol_20 > 0 else 0
                         
-                        # अगर RVoL 1.5 या 2 से ऊपर है, तो वॉल्यूम ब्रेकआउट बहुत तगड़ा है!
                         rvol_display = f"🔥 {rvol:.2f}x" if rvol >= 1.5 else f"{rvol:.2f}x"
                             
                         breakout_list.append({
                             "Symbol": stock.replace(".NS", ""),
                             "Price": f"₹{current_price:,.2f}",
                             "52W High": f"₹{year_high:,.2f}",
-                            "RVoL": rvol_display, # नया RVoL कॉलम
+                            "RVoL": rvol_display,
                             "Status": status_label
                         })
                 except Exception: 
@@ -244,8 +247,6 @@ def render_dashboard():
 
     # 3. 🔍 SEARCH BAR
     st.markdown("""<h3 class="txt-white" style="font-size:1.2rem;">🔍 Search F&O Stock</h3>""", unsafe_allow_html=True)
-    # यह सेलेक्टबॉक्स है। इसमें आप 'REL' लिखेंगे तो 'RELIANCE' अपने आप आ जाएगा। 
-    # CSS फिक्स कर दिया है तो अब टाइप किया हुआ टेक्स्ट सफ़ेद रंग में साफ दिखेगा।
     symbol = st.selectbox("Select Stock", options=FO_STOCKS_LIST, index=FO_STOCKS_LIST.index("RELIANCE"), label_visibility="collapsed")
     
     st.markdown("""<br>""", unsafe_allow_html=True)
