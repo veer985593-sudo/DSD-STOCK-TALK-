@@ -24,7 +24,9 @@ st.markdown("""
 <style>
     /* Base Background */
     .stApp, .main { background-color: #0b0f19 !important; }
-    p, span, div, label, h1, h2, h3, h4, h5, h6, li { color: #F8FAFC; }
+    
+    /* 🛠️ FIX: Removed 'li' from global white text so dropdown options don't turn white! */
+    p, span, div, label, h1, h2, h3, h4, h5, h6 { color: #F8FAFC !important; }
     
     /* Hide Sidebar Completely */
     [data-testid="collapsedControl"] { display: none !important; }
@@ -41,17 +43,16 @@ st.markdown("""
         color: #FFFFFF !important; background-color: transparent !important;
     }
     
-    /* 🛠️ ULTIMATE SEARCH BOX DROPDOWN FIX */
+    /* 🛠️ ULTIMATE SEARCH BOX DROPDOWN FIX (Black Text on White Background) */
     .stSelectbox div[data-baseweb="select"] { background-color: #121826 !important; border: 1px solid #D4AF37 !important; border-radius: 8px; }
-    .stSelectbox div[data-baseweb="select"] * { color: #FFFFFF !important; font-weight: bold; }
+    .stSelectbox div[data-baseweb="select"] span { color: #FFFFFF !important; font-weight: bold; }
     
-    /* Force Dropdown Menu to be Dark with White Text */
-    div[data-baseweb="popover"] > div { background-color: #121826 !important; border: 1px solid #D4AF37 !important; }
-    ul[data-baseweb="menu"] { background-color: #121826 !important; }
-    ul[data-baseweb="menu"] li { color: #FFFFFF !important; font-size: 1rem !important; background-color: transparent !important; }
-    ul[data-baseweb="menu"] li:hover { background-color: #1E293B !important; color: #D4AF37 !important; }
+    /* Forcing the dropdown options to be strictly BLACK so they are always visible */
+    li[role="option"] { color: #000000 !important; font-weight: bold !important; background-color: #FFFFFF !important; }
+    li[role="option"] span { color: #000000 !important; font-weight: bold !important; }
+    li[role="option"][aria-selected="true"] { background-color: #E2E8F0 !important; color: #D4AF37 !important; }
     
-    /* Custom Color Classes */
+    /* Custom Color Classes for Market Indices & Gainers/Losers */
     .txt-green { color: #10B981 !important; font-weight: 800 !important; }
     .txt-red { color: #EF4444 !important; font-weight: 800 !important; }
     .txt-white { color: #FFFFFF !important; font-weight: 800 !important; }
@@ -354,7 +355,6 @@ def render_dashboard():
                     if insider is not None and not insider.empty: _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की गतिविधि दर्ज की गई है।", "error")
                     else: _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई नेगेटिव सिग्नल नहीं है।", "success")
                 except Exception: _render_alert("🟢 **ALL CLEAR:** प्रमोटर का कोई अलर्ट नहीं है।", "success")
-                
                 major_holders = ticker.major_holders
                 if major_holders is not None and not major_holders.empty:
                     df_m = major_holders.copy()
