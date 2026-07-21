@@ -1,6 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
-Mobile Optimized Front-Page UI (Perfect Colors & VIX)
+Mobile Optimized Front-Page UI (Perfect Search Box & RVoL)
 """
 import streamlit as st
 import json
@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed", 
 )
 
-# --- 💎 BULLETPROOF CSS WITH CUSTOM CLASSES ---
+# --- 💎 BULLETPROOF CSS ---
 st.markdown("""
 <style>
     /* Base Background */
@@ -33,36 +33,27 @@ st.markdown("""
     div[role="tablist"] button[aria-selected="true"] p { color: #D4AF37 !important; font-weight: 800 !important; }
     div[role="tablist"] button[aria-selected="true"] { border-bottom-color: #D4AF37 !important; }
     
-    /* Search Box */
+    /* 🛠️ FIX FOR SEARCH BOX TYPING VISIBILITY */
     .stSelectbox div[data-baseweb="select"] { background-color: #121826 !important; border: 1px solid #D4AF37 !important; border-radius: 8px; }
     .stSelectbox div[data-baseweb="select"] span { color: #FFFFFF !important; font-weight: bold; }
+    input[aria-autocomplete="list"] { color: #FFFFFF !important; font-weight: bold !important; -webkit-text-fill-color: #FFFFFF !important; }
+    ul[role="listbox"] { background-color: #121826 !important; }
+    ul[role="listbox"] li { color: #FFFFFF !important; }
+    ul[role="listbox"] li[aria-selected="true"] { background-color: #1E293B !important; color: #D4AF37 !important; font-weight: bold; }
     
     /* Table Styling */
     [data-testid="stDataFrame"] div, [data-testid="stDataFrame"] th, [data-testid="stDataFrame"] td {
         color: #FFFFFF !important; background-color: transparent !important;
     }
     
-    /* 🚀 CUSTOM COLOR CLASSES (This fixes the White text issue 100%) */
+    /* Custom Color Classes */
     .txt-green { color: #10B981 !important; font-weight: 800 !important; }
     .txt-red { color: #EF4444 !important; font-weight: 800 !important; }
     .txt-white { color: #FFFFFF !important; font-weight: 800 !important; }
     .txt-gray { color: #94A3B8 !important; font-weight: 600 !important; }
     
-    .metric-box {
-        background: rgba(30, 41, 59, 0.7); 
-        border: 1px solid rgba(255, 255, 255, 0.05); 
-        border-radius: 12px; 
-        padding: 15px; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
-        margin-bottom: 10px;
-    }
-    .trend-box {
-        background: rgba(30, 41, 59, 0.7); 
-        border: 1px solid rgba(255,255,255,0.05); 
-        border-radius: 8px; 
-        padding: 12px; 
-        margin-bottom: 10px;
-    }
+    .metric-box { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 10px; }
+    .trend-box { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -97,7 +88,6 @@ FO_STOCKS_LIST.sort()
 # --- 📡 DATA FETCHING ---
 @st.cache_data(ttl=60) 
 def get_live_index_data():
-    # 🛠️ NIFTY IT हटाकर INDIA VIX लगा दिया गया है
     index_tickers = {"NIFTY 50": "^NSEI", "SENSEX": "^BSESN", "BANK NIFTY": "^NSEBANK", "INDIA VIX": "^INDIAVIX"}
     results = {}
     for name, sym in index_tickers.items():
@@ -145,12 +135,15 @@ def scan_52w_high_stocks():
     nifty_stocks = [f"{stock}.NS" for stock in FO_STOCKS_LIST]
     breakout_list = []
     try:
+        # 🛠️ RVoL कैलकुलेशन के लिए Close और Volume दोनों डेटा डाउनलोड कर रहे हैं
         data = yf.download(nifty_stocks, period="1y", progress=False)
         if not data.empty:
             for stock in nifty_stocks:
                 try:
                     close_prices = data['Close'][stock].dropna()
-                    if len(close_prices) > 200: 
+                    volumes = data['Volume'][stock].dropna()
+                    
+                    if len(close_prices) > 200 and len(volumes) > 20: 
                         current_price = close_prices.iloc[-1]
                         year_high = close_prices.max()
                         
@@ -161,10 +154,19 @@ def scan_52w_high_stocks():
                         else:
                             continue
                             
+                        # 🛠️ Calculate RVoL (Relative Volume - 20 Day Average)
+                        current_vol = volumes.iloc[-1]
+                        avg_vol_20 = volumes.iloc[-20:].mean()
+                        rvol = current_vol / avg_vol_20 if avg_vol_20 > 0 else 0
+                        
+                        # अगर RVoL 1.5 या 2 से ऊपर है, तो वॉल्यूम ब्रेकआउट बहुत तगड़ा है!
+                        rvol_display = f"🔥 {rvol:.2f}x" if rvol >= 1.5 else f"{rvol:.2f}x"
+                            
                         breakout_list.append({
                             "Symbol": stock.replace(".NS", ""),
                             "Price": f"₹{current_price:,.2f}",
                             "52W High": f"₹{year_high:,.2f}",
+                            "RVoL": rvol_display, # नया RVoL कॉलम
                             "Status": status_label
                         })
                 except Exception: 
@@ -175,7 +177,6 @@ def scan_52w_high_stocks():
 
 # --- UI COMPONENTS ---
 def _render_custom_metric(label, value, change, pct):
-    # 🛠️ पक्का कलर लॉजिक: प्लस है तो ग्रीन (↑), माइनस है तो रेड (↓)
     if change >= 0:
         color_class = "txt-green"
         arrow = "↑"
@@ -183,7 +184,7 @@ def _render_custom_metric(label, value, change, pct):
     else:
         color_class = "txt-red"
         arrow = "↓"
-        sign = "" # माइनस की वैल्यू में पहले से '-' होता है
+        sign = "" 
         
     html = f"""
     <div class="metric-box">
@@ -195,18 +196,10 @@ def _render_custom_metric(label, value, change, pct):
     st.markdown(html, unsafe_allow_html=True)
 
 def _render_alert(message, type="success"):
-    if type == "success":
-        bg, border, text_color = "rgba(6, 78, 59, 0.4)", "#059669", "#34D399"
-    elif type == "error":
-        bg, border, text_color = "rgba(127, 29, 29, 0.4)", "#DC2626", "#F87171"
-    else:
-        bg, border, text_color = "rgba(51, 65, 85, 0.4)", "#475569", "#CBD5E1"
-        
-    html = f"""
-    <div style="background: {bg}; border: 1px solid {border}; border-radius: 8px; padding: 12px 16px; margin-bottom: 15px; color: {text_color} !important; font-weight: 500;">
-        {message}
-    </div>
-    """
+    if type == "success": bg, border, text_color = "rgba(6, 78, 59, 0.4)", "#059669", "#34D399"
+    elif type == "error": bg, border, text_color = "rgba(127, 29, 29, 0.4)", "#DC2626", "#F87171"
+    else: bg, border, text_color = "rgba(51, 65, 85, 0.4)", "#475569", "#CBD5E1"
+    html = f"""<div style="background: {bg}; border: 1px solid {border}; border-radius: 8px; padding: 12px 16px; margin-bottom: 15px; color: {text_color} !important; font-weight: 500;">{message}</div>"""
     st.markdown(html, unsafe_allow_html=True)
 
 def _render_range_bar(label, low, high, current):
@@ -236,7 +229,7 @@ def render_dashboard():
     st.markdown("""<h1 style="font-size: 2.5rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 10px;">🚩 STOCK BY DSD AI</h1>""", unsafe_allow_html=True)
     st.markdown("""<p style="text-align: center; color: #94A3B8 !important; font-size: 0.9rem; margin-bottom: 20px;">Professional AI Market Intelligence Terminal</p>""", unsafe_allow_html=True)
     
-    # 2. MARKET OVERVIEW (Nifty, Sensex, Bank Nifty, INDIA VIX)
+    # 2. MARKET OVERVIEW
     indices = get_live_index_data()
     if indices:
         col1, col2 = st.columns(2)
@@ -249,8 +242,10 @@ def render_dashboard():
                     
     st.markdown("""<br>""", unsafe_allow_html=True)
 
-    # 3. 🔍 SEARCH BAR (MAIN SCREEN)
+    # 3. 🔍 SEARCH BAR
     st.markdown("""<h3 class="txt-white" style="font-size:1.2rem;">🔍 Search F&O Stock</h3>""", unsafe_allow_html=True)
+    # यह सेलेक्टबॉक्स है। इसमें आप 'REL' लिखेंगे तो 'RELIANCE' अपने आप आ जाएगा। 
+    # CSS फिक्स कर दिया है तो अब टाइप किया हुआ टेक्स्ट सफ़ेद रंग में साफ दिखेगा।
     symbol = st.selectbox("Select Stock", options=FO_STOCKS_LIST, index=FO_STOCKS_LIST.index("RELIANCE"), label_visibility="collapsed")
     
     st.markdown("""<br>""", unsafe_allow_html=True)
@@ -277,8 +272,7 @@ def render_dashboard():
                         <div class="txt-gray" style="font-size:0.85rem; margin-top:4px;">₹{g['current']:,.2f}</div>
                     </div>
                     """, unsafe_allow_html=True)
-            else:
-                st.write("No gainers currently.")
+            else: st.write("No gainers currently.")
                 
         with trend_tab2:
             if losers:
@@ -292,8 +286,7 @@ def render_dashboard():
                         <div class="txt-gray" style="font-size:0.85rem; margin-top:4px;">₹{ls['current']:,.2f}</div>
                     </div>
                     """, unsafe_allow_html=True)
-            else:
-                st.write("No losers currently.")
+            else: st.write("No losers currently.")
 
     st.markdown("""<hr style="border-color:#1E293B;">""", unsafe_allow_html=True)
 
@@ -311,14 +304,11 @@ def render_dashboard():
                     _render_alert(f"🟢 <b>MOMENTUM ALERT:</b> {symbol} कल के High (₹{yesterday_high:,.2f}) को पार कर चुका है! (Current: ₹{current_price:,.2f})", "success")
                 else:
                     _render_alert(f"⚪ <b>NO BREAKOUT YET:</b> {symbol} अभी कल के High (₹{yesterday_high:,.2f}) के नीचे ट्रेड कर रहा है।", "neutral")
-        except Exception: 
-            pass
+        except Exception: pass
 
         col1, col2 = st.columns(2)
-        with col1:
-            _render_range_bar("Intraday", 2450.00, 2530.00, 2495.50)
-        with col2:
-            _render_range_bar("52-Week", 2100.00, 3100.00, 2495.50)
+        with col1: _render_range_bar("Intraday", 2450.00, 2530.00, 2495.50)
+        with col2: _render_range_bar("52-Week", 2100.00, 3100.00, 2495.50)
 
         st.markdown("""<br>""", unsafe_allow_html=True)
         tab1, tab2, tab3 = st.tabs(["📊 Chart", "🧠 Fundamentals", "🏢 Alerts"])
@@ -332,74 +322,52 @@ def render_dashboard():
                         increasing_line_color='#10B981', decreasing_line_color='#EF4444'
                     )])
                     fig.update_layout(
-                        title=f"{symbol} (Last 1 Month)", 
-                        template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                        title=f"{symbol} (Last 1 Month)", template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                         margin=dict(l=10, r=10, t=40, b=10),
                         xaxis=dict(showgrid=True, gridcolor='#1E293B', tickfont=dict(color='#94A3B8')),
                         yaxis=dict(showgrid=True, gridcolor='#1E293B', tickfont=dict(color='#94A3B8')),
                         title_font=dict(color='#FFFFFF')
                     )
                     st.plotly_chart(fig, use_container_width=True)
-            except Exception: 
-                pass
+            except Exception: pass
                 
         with tab2:
             try:
                 info = yf.Ticker(f"{symbol}.NS").info
-                
                 mcap = info.get('marketCap')
                 st.markdown(f"""<div class="metric-box"><div class="txt-gray" style="font-size:0.9rem;">Market Cap</div><div class="txt-white" style="font-size:1.4rem;">₹{mcap/10000000:,.2f} Cr</div></div>""", unsafe_allow_html=True)
-                
                 pe = info.get('trailingPE', 0)
                 pe_color = "txt-green" if pe and pe < 25 else "txt-red" if pe and pe > 40 else "txt-white"
                 st.markdown(f"""<div class="metric-box"><div class="txt-gray" style="font-size:0.9rem;">P/E Ratio</div><div class="{pe_color}" style="font-size:1.4rem;">{round(pe,2) if pe else "N/A"}</div></div>""", unsafe_allow_html=True)
-                
                 roe = info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0
                 roe_color = "txt-green" if roe > 15 else "txt-red" if roe < 5 else "txt-white"
                 st.markdown(f"""<div class="metric-box"><div class="txt-gray" style="font-size:0.9rem;">ROE</div><div class="{roe_color}" style="font-size:1.4rem;">{round(roe,2)}%</div></div>""", unsafe_allow_html=True)
-            except Exception: 
-                pass
+            except Exception: pass
                 
         with tab3:
             try:
                 ticker = yf.Ticker(f"{symbol}.NS")
                 st.markdown("""<h3 class="txt-white">🚨 Promoter Trust Radar</h3>""", unsafe_allow_html=True)
-                
                 try:
                     insider = ticker.insider_transactions
-                    if insider is not None and not insider.empty: 
-                        _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की हालिया गतिविधि दर्ज की गई है। सावधान रहें!", "error")
-                    else: 
-                        _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई नेगेटिव सिग्नल नहीं है।", "success")
-                except Exception: 
-                    _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई अलर्ट नहीं है।", "success")
+                    if insider is not None and not insider.empty: _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की गतिविधि दर्ज की गई है।", "error")
+                    else: _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई नेगेटिव सिग्नल नहीं है।", "success")
+                except Exception: _render_alert("🟢 **ALL CLEAR:** प्रमोटर का कोई अलर्ट नहीं है।", "success")
                 
                 major_holders = ticker.major_holders
                 if major_holders is not None and not major_holders.empty:
                     df_m = major_holders.copy()
-                    if isinstance(df_m.index[0], str): 
-                        df_m = df_m.reset_index()
-                        df_m.columns = ["Category", "Value"]
-                    elif len(df_m.columns) >= 2:
-                        df_m.columns = ["Value", "Category"]
-                        df_m = df_m[["Category", "Value"]]
-                    
-                    replace_mapping = {
-                        "insidersPercentHeld": "👔 Promoter Holding",
-                        "institutionsPercentHeld": "🏦 Institutional Holding",
-                        "institutionsFloatPercentHeld": "🌊 Market Float",
-                        "institutionsCount": "🏢 Total Institutions"
-                    }
-                    df_m["Category"] = df_m["Category"].replace(replace_mapping)
+                    if isinstance(df_m.index[0], str): df_m = df_m.reset_index(); df_m.columns = ["Category", "Value"]
+                    elif len(df_m.columns) >= 2: df_m.columns = ["Value", "Category"]; df_m = df_m[["Category", "Value"]]
+                    df_m["Category"] = df_m["Category"].replace({"insidersPercentHeld": "👔 Promoter Holding", "institutionsPercentHeld": "🏦 Institutional Holding", "institutionsFloatPercentHeld": "🌊 Market Float", "institutionsCount": "🏢 Total Institutions"})
                     st.dataframe(df_m, use_container_width=True, hide_index=True)
-            except Exception: 
-                pass
+            except Exception: pass
 
         st.markdown("""<br>""", unsafe_allow_html=True)
         
-        # 6. 52 WEEK HIGH RADAR
-        with st.expander("🔥 DSD 52-Week High Master Radar", expanded=True):
-            st.markdown("""<p class="txt-gray">इस लिस्ट में सिर्फ वही F&O स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर के करीब हैं।</p>""", unsafe_allow_html=True)
+        # 6. 52 WEEK HIGH RADAR WITH RVOL
+        with st.expander("🔥 DSD 52-Week High Master Radar & RVoL", expanded=True):
+            st.markdown("""<p class="txt-gray">इस लिस्ट में सिर्फ वही F&O स्टॉक्स दिखेंगे जो आज अपने 1 साल के उच्चतम स्तर के करीब हैं। इसमें RVoL (Relative Volume) भी शामिल है।</p>""", unsafe_allow_html=True)
             with st.spinner("Scanning ALL F&O stocks live..."):
                 breakout_df = scan_52w_high_stocks()
                 if not breakout_df.empty:
