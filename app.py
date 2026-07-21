@@ -376,7 +376,8 @@ def render_dashboard():
                     if insider is not None and not insider.empty: _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की गतिविधि दर्ज की गई है।", "error")
                     else: _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई नेगेटिव सिग्नल नहीं है।", "success")
                 except Exception: _render_alert("🟢 **ALL CLEAR:** प्रमोटर का कोई अलर्ट नहीं है।", "success")
-               major_holders = ticker.major_holders
+                
+                major_holders = ticker.major_holders
                 if major_holders is not None and not major_holders.empty:
                     df_m = major_holders.copy()
                     if isinstance(df_m.index[0], str): df_m = df_m.reset_index(); df_m.columns = ["Category", "Value"]
@@ -399,5 +400,4 @@ def render_dashboard():
                     _render_alert("🔴 आज इस लिस्ट में से कोई भी F&O स्टॉक अपने 52-Week High पर नहीं है।", "error")
 
 if __name__ == "__main__":
-    render_dashboard() 
-                
+    render_dashboard()
