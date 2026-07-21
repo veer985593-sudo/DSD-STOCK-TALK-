@@ -355,6 +355,7 @@ def render_dashboard():
                     if insider is not None and not insider.empty: _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की गतिविधि दर्ज की गई है।", "error")
                     else: _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई नेगेटिव सिग्नल नहीं है।", "success")
                 except Exception: _render_alert("🟢 **ALL CLEAR:** प्रमोटर का कोई अलर्ट नहीं है।", "success")
+                
                 major_holders = ticker.major_holders
                 if major_holders is not None and not major_holders.empty:
                     df_m = major_holders.copy()
