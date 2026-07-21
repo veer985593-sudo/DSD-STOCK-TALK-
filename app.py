@@ -1,6 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
-Mobile Optimized | Ultimate Dropdown Fix | 5-Min Refresh | RVoL
+Mobile Optimized | Ultimate Dropdown Fix | 5-Min Refresh (Fixed Caching) | RVoL
 """
 import streamlit as st
 import json
@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed", 
 )
 
-# ⏳ 5-MINUTE AUTO REFRESH (300 Seconds)
+# ⏳ 5-MINUTE AUTO REFRESH (300 Seconds) - पेज अपने-आप ताज़ा होगा
 st.markdown('<meta http-equiv="refresh" content="300">', unsafe_allow_html=True)
 
 # --- 💎 BULLETPROOF CSS ---
@@ -44,7 +44,6 @@ st.markdown("""
     }
     
     /* 🚨 ULTIMATE SEARCH BOX & DROPDOWN FIX (DARK THEME) 🚨 */
-    /* 1. Main Search Box */
     div[data-baseweb="select"], 
     div[data-baseweb="select"] > div { 
         background-color: #121826 !important; 
@@ -59,7 +58,7 @@ st.markdown("""
         caret-color: #FFFFFF !important; 
     }
     
-    /* 2. Dropdown Menu (The list that pops out) */
+    /* Portal Dropdown Menu Fix */
     ul[role="listbox"], 
     ul[data-baseweb="menu"], 
     div[data-baseweb="popover"] {
@@ -67,28 +66,18 @@ st.markdown("""
         border: 1px solid #D4AF37 !important;
         border-radius: 8px !important;
     }
-    
-    /* 3. Dropdown Options (The individual stock names) */
     li[role="option"] {
         background-color: #121826 !important;
         color: #FFFFFF !important;
         font-weight: bold !important;
     }
-    li[role="option"] span {
-        color: #FFFFFF !important;
-    }
-    
-    /* 4. Hover & Selected State (Golden Background, Black Text) */
+    li[role="option"] span { color: #FFFFFF !important; }
     li[role="option"]:hover, 
-    li[role="option"][aria-selected="true"] {
-        background-color: #D4AF37 !important;
-    }
+    li[role="option"][aria-selected="true"] { background-color: #D4AF37 !important; }
     li[role="option"]:hover span, 
     li[role="option"][aria-selected="true"] span,
     li[role="option"]:hover, 
-    li[role="option"][aria-selected="true"] {
-        color: #000000 !important;
-    }
+    li[role="option"][aria-selected="true"] { color: #000000 !important; }
     
     /* Custom Color Classes for Market Indices & Gainers/Losers */
     .txt-green { color: #10B981 !important; font-weight: 800 !important; }
@@ -130,7 +119,7 @@ FO_STOCKS_LIST = [
 FO_STOCKS_LIST.sort()
 
 # --- 📡 DATA FETCHING ---
-@st.cache_data(ttl=60) 
+@st.cache_data(ttl=60) # इंडेक्स का डेटा 1 मिनट में लाइव अपडेट होगा
 def get_live_index_data():
     index_tickers = {"NIFTY 50": "^NSEI", "SENSEX": "^BSESN", "BANK NIFTY": "^NSEBANK", "INDIA VIX": "^INDIAVIX"}
     results = {}
@@ -148,7 +137,7 @@ def get_live_index_data():
             pass
     return results
 
-@st.cache_data(ttl=300) 
+@st.cache_data(ttl=300) # गेनर/लूज़र हर 5 मिनट में अपडेट होंगे
 def get_live_trending_fo():
     nifty_stocks = [f"{stock}.NS" for stock in FO_STOCKS_LIST]
     try:
@@ -174,7 +163,7 @@ def get_live_trending_fo():
     except Exception: 
         return {"gainers": [], "losers": []}
 
-@st.cache_data(ttl=86400)
+@st.cache_data(ttl=300) # 🚨 (बड़ा सुधार) 52W हाई का रडार भी अब हर 5 मिनट में अपडेट होगा (पहले 24 घंटे था)
 def scan_52w_high_stocks():
     nifty_stocks = [f"{stock}.NS" for stock in FO_STOCKS_LIST]
     breakout_list = []
@@ -269,7 +258,7 @@ def _render_range_bar(label, low, high, current):
 def render_dashboard():
     # 1. HEADER
     st.markdown("""<h1 style="font-size: 2.5rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 10px;">🚩 STOCK BY DSD AI</h1>""", unsafe_allow_html=True)
-    st.markdown("""<p style="text-align: center; color: #94A3B8 !important; font-size: 0.9rem; margin-bottom: 20px;">Professional AI Market Intelligence Terminal</p>""", unsafe_allow_html=True)
+    st.markdown(f"""<p style="text-align: center; color: #94A3B8 !important; font-size: 0.9rem; margin-bottom: 20px;">Professional AI Market Intelligence Terminal</p>""", unsafe_allow_html=True)
     
     # 2. MARKET OVERVIEW
     indices = get_live_index_data()
