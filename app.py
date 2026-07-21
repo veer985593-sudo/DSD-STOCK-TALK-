@@ -1,6 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
-Mobile Optimized | Ultimate Search Box Fix | 5-Min Refresh | RVoL
+Mobile Optimized | Ultimate Dropdown Fix | 5-Min Refresh | RVoL
 """
 import streamlit as st
 import json
@@ -43,34 +43,51 @@ st.markdown("""
         color: #FFFFFF !important; background-color: transparent !important;
     }
     
-    /* 🚨 ULTIMATE SEARCH BOX FIX (WHITE BOX + BLACK TEXT) 🚨 */
-    div[data-baseweb="select"] { 
-        background-color: #FFFFFF !important; 
-        border: 2px solid #D4AF37 !important; 
-        border-radius: 8px !important; 
+    /* 🚨 ULTIMATE SEARCH BOX & DROPDOWN FIX (DARK THEME) 🚨 */
+    /* 1. Main Search Box */
+    div[data-baseweb="select"], 
+    div[data-baseweb="select"] > div { 
+        background-color: #121826 !important; 
+        border-color: #D4AF37 !important; 
+        border-radius: 8px !important;
     }
     div[data-baseweb="select"] span, 
     div[data-baseweb="select"] input { 
-        color: #000000 !important; 
-        font-weight: 900 !important; 
-        -webkit-text-fill-color: #000000 !important; 
-        caret-color: #000000 !important; 
+        color: #FFFFFF !important; 
+        font-weight: bold !important;
+        -webkit-text-fill-color: #FFFFFF !important; 
+        caret-color: #FFFFFF !important; 
     }
     
-    /* Portal Dropdown Menu Fix */
-    div[data-baseweb="popover"] ul, 
-    div[data-baseweb="popover"] div { 
-        background-color: #FFFFFF !important; 
+    /* 2. Dropdown Menu (The list that pops out) */
+    ul[role="listbox"], 
+    ul[data-baseweb="menu"], 
+    div[data-baseweb="popover"] {
+        background-color: #121826 !important;
+        border: 1px solid #D4AF37 !important;
+        border-radius: 8px !important;
     }
-    div[data-baseweb="popover"] li, 
-    div[data-baseweb="popover"] li span { 
-        color: #000000 !important; 
-        font-weight: 800 !important; 
+    
+    /* 3. Dropdown Options (The individual stock names) */
+    li[role="option"] {
+        background-color: #121826 !important;
+        color: #FFFFFF !important;
+        font-weight: bold !important;
     }
-    div[data-baseweb="popover"] li:hover, 
-    div[data-baseweb="popover"] li[aria-selected="true"] { 
-        background-color: #D4AF37 !important; 
-        color: #000000 !important; 
+    li[role="option"] span {
+        color: #FFFFFF !important;
+    }
+    
+    /* 4. Hover & Selected State (Golden Background, Black Text) */
+    li[role="option"]:hover, 
+    li[role="option"][aria-selected="true"] {
+        background-color: #D4AF37 !important;
+    }
+    li[role="option"]:hover span, 
+    li[role="option"][aria-selected="true"] span,
+    li[role="option"]:hover, 
+    li[role="option"][aria-selected="true"] {
+        color: #000000 !important;
     }
     
     /* Custom Color Classes for Market Indices & Gainers/Losers */
