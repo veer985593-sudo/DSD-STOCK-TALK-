@@ -1,6 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
-Mobile Optimized | Fixed Search Visibility | 5-Min Auto Refresh | RVoL
+Mobile Optimized | Ultimate Search Box Fix | 5-Min Refresh | RVoL
 """
 import streamlit as st
 import json
@@ -25,7 +25,7 @@ st.markdown("""
     /* Base Background */
     .stApp, .main { background-color: #0b0f19 !important; }
     
-    /* 🛠️ FIX: Removed 'li' from global white text so dropdown options don't turn white! */
+    /* Text Globals */
     p, span, div, label, h1, h2, h3, h4, h5, h6 { color: #F8FAFC !important; }
     
     /* Hide Sidebar Completely */
@@ -43,14 +43,35 @@ st.markdown("""
         color: #FFFFFF !important; background-color: transparent !important;
     }
     
-    /* 🛠️ ULTIMATE SEARCH BOX DROPDOWN FIX (Black Text on White Background) */
-    .stSelectbox div[data-baseweb="select"] { background-color: #121826 !important; border: 1px solid #D4AF37 !important; border-radius: 8px; }
-    .stSelectbox div[data-baseweb="select"] span { color: #FFFFFF !important; font-weight: bold; }
+    /* 🚨 ULTIMATE SEARCH BOX FIX (WHITE BOX + BLACK TEXT) 🚨 */
+    div[data-baseweb="select"] { 
+        background-color: #FFFFFF !important; 
+        border: 2px solid #D4AF37 !important; 
+        border-radius: 8px !important; 
+    }
+    div[data-baseweb="select"] span, 
+    div[data-baseweb="select"] input { 
+        color: #000000 !important; 
+        font-weight: 900 !important; 
+        -webkit-text-fill-color: #000000 !important; 
+        caret-color: #000000 !important; 
+    }
     
-    /* Forcing the dropdown options to be strictly BLACK so they are always visible */
-    li[role="option"] { color: #000000 !important; font-weight: bold !important; background-color: #FFFFFF !important; }
-    li[role="option"] span { color: #000000 !important; font-weight: bold !important; }
-    li[role="option"][aria-selected="true"] { background-color: #E2E8F0 !important; color: #D4AF37 !important; }
+    /* Portal Dropdown Menu Fix */
+    div[data-baseweb="popover"] ul, 
+    div[data-baseweb="popover"] div { 
+        background-color: #FFFFFF !important; 
+    }
+    div[data-baseweb="popover"] li, 
+    div[data-baseweb="popover"] li span { 
+        color: #000000 !important; 
+        font-weight: 800 !important; 
+    }
+    div[data-baseweb="popover"] li:hover, 
+    div[data-baseweb="popover"] li[aria-selected="true"] { 
+        background-color: #D4AF37 !important; 
+        color: #000000 !important; 
+    }
     
     /* Custom Color Classes for Market Indices & Gainers/Losers */
     .txt-green { color: #10B981 !important; font-weight: 800 !important; }
@@ -355,8 +376,7 @@ def render_dashboard():
                     if insider is not None and not insider.empty: _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की गतिविधि दर्ज की गई है।", "error")
                     else: _render_alert("🟢 **ALL CLEAR:** प्रमोटर द्वारा शेयर बेचने का कोई नेगेटिव सिग्नल नहीं है।", "success")
                 except Exception: _render_alert("🟢 **ALL CLEAR:** प्रमोटर का कोई अलर्ट नहीं है।", "success")
-                
-                major_holders = ticker.major_holders
+               major_holders = ticker.major_holders
                 if major_holders is not None and not major_holders.empty:
                     df_m = major_holders.copy()
                     if isinstance(df_m.index[0], str): df_m = df_m.reset_index(); df_m.columns = ["Category", "Value"]
@@ -379,4 +399,5 @@ def render_dashboard():
                     _render_alert("🔴 आज इस लिस्ट में से कोई भी F&O स्टॉक अपने 52-Week High पर नहीं है।", "error")
 
 if __name__ == "__main__":
-    render_dashboard()
+    render_dashboard() 
+                
