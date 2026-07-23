@@ -1,6 +1,6 @@
 """
 STOCK BY DSD AI - Advanced Stock Research Assistant
-Mobile Optimized | ATH & 52W High Radar | 5-Min Auto Refresh | RVoL
+Mobile Optimized | Clean WHITE Theme | ATH & 52W High Radar | RVoL
 """
 import streamlit as st
 import json
@@ -14,33 +14,44 @@ st.set_page_config(page_title="STOCK BY DSD AI", page_icon="🚩", layout="wide"
 # ⏳ 5-MINUTE AUTO REFRESH
 st.markdown('<meta http-equiv="refresh" content="300">', unsafe_allow_html=True)
 
-# --- 💎 BULLETPROOF CSS ---
+# --- 💎 BULLETPROOF CSS (WHITE THEME) ---
 st.markdown("""
 <style>
-    .stApp, .main { background-color: #0b0f19 !important; }
-    p, span, div, label, h1, h2, h3, h4, h5, h6 { color: #F8FAFC !important; }
+    /* 🌟 Main White Background 🌟 */
+    .stApp, .main { background-color: #FFFFFF !important; }
+    
+    /* Make all standard text Black */
+    p, span, div, label, h1, h2, h3, h4, h5, h6 { color: #000000 !important; }
+    
     [data-testid="collapsedControl"], section[data-testid="stSidebar"] { display: none !important; }
+    
+    /* Tabs Styling for Light Theme */
     div[role="tablist"] button { background-color: transparent !important; }
-    div[role="tablist"] button p { color: #94A3B8 !important; font-size: 1.05rem !important; }
+    div[role="tablist"] button p { color: #475569 !important; font-size: 1.05rem !important; font-weight: 600 !important; }
     div[role="tablist"] button[aria-selected="true"] p { color: #D4AF37 !important; font-weight: 800 !important; }
     div[role="tablist"] button[aria-selected="true"] { border-bottom-color: #D4AF37 !important; }
-    [data-testid="stDataFrame"] div, [data-testid="stDataFrame"] th, [data-testid="stDataFrame"] td { color: #FFFFFF !important; background-color: transparent !important; }
     
-    /* 🚨 SEARCH BOX & DROPDOWN FIX (Black Text on White Box) */
-    div[data-baseweb="select"], div[data-baseweb="select"] > div { background-color: #121826 !important; border-color: #D4AF37 !important; border-radius: 8px !important; }
-    div[data-baseweb="select"] span, div[data-baseweb="select"] input { color: #FFFFFF !important; font-weight: bold !important; -webkit-text-fill-color: #FFFFFF !important; caret-color: #FFFFFF !important; }
-    ul[role="listbox"], ul[data-baseweb="menu"], div[data-baseweb="popover"] { background-color: #121826 !important; border: 1px solid #D4AF37 !important; border-radius: 8px !important; }
-    li[role="option"] { background-color: #121826 !important; color: #FFFFFF !important; font-weight: bold !important; }
-    li[role="option"] span { color: #FFFFFF !important; }
+    /* Table Styling for Light Theme */
+    [data-testid="stDataFrame"] div, [data-testid="stDataFrame"] th, [data-testid="stDataFrame"] td { color: #000000 !important; background-color: transparent !important; }
+    
+    /* 🚨 SEARCH BOX & DROPDOWN FIX (Light Theme) 🚨 */
+    div[data-baseweb="select"], div[data-baseweb="select"] > div { background-color: #F8FAFC !important; border-color: #D4AF37 !important; border-radius: 8px !important; }
+    div[data-baseweb="select"] span, div[data-baseweb="select"] input { color: #000000 !important; font-weight: bold !important; -webkit-text-fill-color: #000000 !important; caret-color: #000000 !important; }
+    ul[role="listbox"], ul[data-baseweb="menu"], div[data-baseweb="popover"] { background-color: #FFFFFF !important; border: 1px solid #D4AF37 !important; border-radius: 8px !important; box-shadow: 0 10px 15px rgba(0,0,0,0.1) !important; }
+    li[role="option"] { background-color: #FFFFFF !important; color: #000000 !important; font-weight: bold !important; }
+    li[role="option"] span { color: #000000 !important; }
     li[role="option"]:hover, li[role="option"][aria-selected="true"] { background-color: #D4AF37 !important; }
     li[role="option"]:hover span, li[role="option"][aria-selected="true"] span, li[role="option"]:hover, li[role="option"][aria-selected="true"] { color: #000000 !important; }
     
-    .txt-green { color: #10B981 !important; font-weight: 800 !important; }
-    .txt-red { color: #EF4444 !important; font-weight: 800 !important; }
-    .txt-white { color: #FFFFFF !important; font-weight: 800 !important; }
-    .txt-gray { color: #94A3B8 !important; font-weight: 600 !important; }
-    .metric-box { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 10px; }
-    .trend-box { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+    /* Custom Color Classes */
+    .txt-green { color: #059669 !important; font-weight: 800 !important; } /* Darker green for white background */
+    .txt-red { color: #DC2626 !important; font-weight: 800 !important; } /* Clear red */
+    .txt-main { color: #000000 !important; font-weight: 800 !important; } /* Pure Black for Main Numbers/Titles */
+    .txt-gray { color: #475569 !important; font-weight: 600 !important; } /* Dark Gray for labels */
+    
+    /* Box Styling for Light Theme */
+    .metric-box { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 10px; }
+    .trend-box { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -88,7 +99,6 @@ def scan_52w_high_stocks():
     nifty_stocks = [f"{stock}.NS" for stock in FO_STOCKS_LIST]
     breakout_list = []
     try:
-        # ATH के लिए period="max" का इस्तेमाल किया है
         data = yf.download(nifty_stocks, period="max", progress=False)
         if not data.empty:
             for stock in nifty_stocks:
@@ -100,11 +110,9 @@ def scan_52w_high_stocks():
                     if len(close_prices) > 250 and len(volumes) > 20: 
                         current_price = close_prices.iloc[-1]
                         current_high = high_prices.iloc[-1]
+                        ath = high_prices.max() 
+                        year_high = high_prices.iloc[-252:].max() 
                         
-                        ath = high_prices.max() # All Time High
-                        year_high = high_prices.iloc[-252:].max() # 52-Week High (252 Trading Days)
-                        
-                        # अगर करंट प्राइस 52W हाई के 2% दायरे में है, तभी लिस्ट में लाओ
                         if current_price >= (year_high * 0.98):
                             if current_high >= ath:
                                 status_label = "👑 ATH + 52W HIGH"
@@ -122,7 +130,7 @@ def scan_52w_high_stocks():
                                 "Symbol": stock.replace(".NS", ""),
                                 "Price": f"₹{current_price:,.2f}",
                                 "52W High": f"₹{year_high:,.2f}",
-                                "ATH": f"₹{ath:,.2f}", # नया ATH कॉलम
+                                "ATH": f"₹{ath:,.2f}", 
                                 "RVoL": rvol_display,
                                 "Status": status_label
                             })
@@ -135,24 +143,25 @@ def _render_custom_metric(label, value, change, pct):
     color_class, arrow, sign = ("txt-green", "↑", "+") if change >= 0 else ("txt-red", "↓", "")
     html = f"""<div class="metric-box">
         <div class="txt-gray" style="font-size: 0.85rem; text-transform: uppercase;">{label}</div>
-        <div class="txt-white" style="font-size: 1.7rem;">{value:,.2f}</div>
+        <div class="txt-main" style="font-size: 1.7rem;">{value:,.2f}</div>
         <div class="{color_class}" style="font-size: 0.9rem; margin-top: 5px;">{arrow} {sign}{change:,.2f} ({sign}{pct:.2f}%)</div>
     </div>"""
     st.markdown(html, unsafe_allow_html=True)
 
 def _render_alert(message, type="success"):
-    bg, border, text_color = ("rgba(6, 78, 59, 0.4)", "#059669", "#34D399") if type == "success" else ("rgba(127, 29, 29, 0.4)", "#DC2626", "#F87171") if type == "error" else ("rgba(51, 65, 85, 0.4)", "#475569", "#CBD5E1")
-    st.markdown(f'<div style="background: {bg}; border: 1px solid {border}; border-radius: 8px; padding: 12px 16px; margin-bottom: 15px; color: {text_color} !important; font-weight: 500;">{message}</div>', unsafe_allow_html=True)
+    # Light theme alert colors
+    bg, border, text_color = ("#D1FAE5", "#059669", "#064E3B") if type == "success" else ("#FEE2E2", "#DC2626", "#7F1D1D") if type == "error" else ("#F1F5F9", "#475569", "#0F172A")
+    st.markdown(f'<div style="background: {bg}; border: 1px solid {border}; border-radius: 8px; padding: 12px 16px; margin-bottom: 15px; color: {text_color} !important; font-weight: 600;">{message}</div>', unsafe_allow_html=True)
 
 def _render_range_bar(label, low, high, current):
     if high <= low or high == 0: return
     pct = max(0, min(100, ((current - low) / (high - low)) * 100))
-    st.markdown(f"""<div class="metric-box"><h4 class="txt-white" style="margin-top:0; margin-bottom:15px; font-size:1.1rem;">🎯 {label} Range</h4><div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:8px;"><span class="txt-gray">Low: <b class="txt-white">₹{low:,.2f}</b></span><span class="txt-gray">High: <b class="txt-white">₹{high:,.2f}</b></span></div><div style="position:relative; height:6px; background:#1E293B; border-radius:3px; width:100%;"><div style="position:absolute; left:0; top:0; height:100%; width:{pct}%; background:linear-gradient(90deg, #EF4444, #F59E0B, #10B981); border-radius:3px;"></div><div style="position:absolute; left:calc({pct}% - 6px); top:6px; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:8px solid #D4AF37;"></div></div><div style="text-align:center; font-size:0.9rem; margin-top:16px;"><span class="txt-white">Current:</span> <span style="color:#D4AF37 !important; font-weight:800; font-size:1.1rem;">₹{current:,.2f}</span></div></div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="metric-box"><h4 class="txt-main" style="margin-top:0; margin-bottom:15px; font-size:1.1rem;">🎯 {label} Range</h4><div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:8px;"><span class="txt-gray">Low: <b class="txt-main">₹{low:,.2f}</b></span><span class="txt-gray">High: <b class="txt-main">₹{high:,.2f}</b></span></div><div style="position:relative; height:6px; background:#E2E8F0; border-radius:3px; width:100%;"><div style="position:absolute; left:0; top:0; height:100%; width:{pct}%; background:linear-gradient(90deg, #EF4444, #F59E0B, #10B981); border-radius:3px;"></div><div style="position:absolute; left:calc({pct}% - 6px); top:6px; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:8px solid #D4AF37;"></div></div><div style="text-align:center; font-size:0.9rem; margin-top:16px;"><span class="txt-main">Current:</span> <span style="color:#D4AF37 !important; font-weight:800; font-size:1.1rem;">₹{current:,.2f}</span></div></div>""", unsafe_allow_html=True)
 
 # --- MAIN APP LAYOUT ---
 def render_dashboard():
-    st.markdown("""<h1 style="font-size: 2.5rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FFF5D1, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 10px;">🚩 STOCK BY DSD AI</h1>""", unsafe_allow_html=True)
-    st.markdown("""<p style="text-align: center; color: #94A3B8 !important; font-size: 0.9rem; margin-bottom: 20px;">Professional AI Market Intelligence Terminal</p>""", unsafe_allow_html=True)
+    st.markdown("""<h1 style="font-size: 2.5rem; font-weight: 800; background: linear-gradient(90deg, #D4AF37, #FDE047, #C5A059); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 5px; padding-top: 10px;">🚩 STOCK BY DSD AI</h1>""", unsafe_allow_html=True)
+    st.markdown("""<p style="text-align: center; color: #475569 !important; font-size: 0.9rem; margin-bottom: 20px;">Professional AI Market Intelligence Terminal</p>""", unsafe_allow_html=True)
     
     indices = get_live_index_data()
     if indices:
@@ -164,11 +173,11 @@ def render_dashboard():
                 with cols[idx]: _render_custom_metric(name, data["value"], data["change"], data["change_percent"])
                     
     st.markdown("""<br>""", unsafe_allow_html=True)
-    st.markdown("""<h3 class="txt-white" style="font-size:1.2rem;">🔍 Search F&O Stock</h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3 class="txt-main" style="font-size:1.2rem;">🔍 Search F&O Stock</h3>""", unsafe_allow_html=True)
     symbol = st.selectbox("Select Stock", options=FO_STOCKS_LIST, index=FO_STOCKS_LIST.index("RELIANCE"), label_visibility="collapsed")
     st.markdown("""<br>""", unsafe_allow_html=True)
 
-    st.markdown("""<h3 class="txt-white" style="font-size:1.2rem;">🔥 Live F&O Action</h3>""", unsafe_allow_html=True)
+    st.markdown("""<h3 class="txt-main" style="font-size:1.2rem;">🔥 Live F&O Action</h3>""", unsafe_allow_html=True)
     with st.spinner("Fetching Live Market..."):
         trending = get_live_trending_fo()
         gainers, losers = trending.get("gainers", []), trending.get("losers", [])
@@ -177,17 +186,17 @@ def render_dashboard():
         trend_tab1, trend_tab2 = st.tabs(["🟢 Top Gainers", "🔴 Top Losers"])
         with trend_tab1:
             if gainers:
-                for g in gainers: st.markdown(f"""<div class="trend-box"><div style="display:flex; justify-content:space-between; align-items:center;"><span class="txt-white" style="font-size:1rem;">{g['symbol']}</span><span class="txt-green" style="font-size:1rem;">↑ +{g['pct']}%</span></div><div class="txt-gray" style="font-size:0.85rem; margin-top:4px;">₹{g['current']:,.2f}</div></div>""", unsafe_allow_html=True)
+                for g in gainers: st.markdown(f"""<div class="trend-box"><div style="display:flex; justify-content:space-between; align-items:center;"><span class="txt-main" style="font-size:1rem;">{g['symbol']}</span><span class="txt-green" style="font-size:1rem;">↑ +{g['pct']}%</span></div><div class="txt-gray" style="font-size:0.85rem; margin-top:4px;">₹{g['current']:,.2f}</div></div>""", unsafe_allow_html=True)
             else: st.write("No gainers currently.")
         with trend_tab2:
             if losers:
-                for ls in losers: st.markdown(f"""<div class="trend-box"><div style="display:flex; justify-content:space-between; align-items:center;"><span class="txt-white" style="font-size:1rem;">{ls['symbol']}</span><span class="txt-red" style="font-size:1rem;">↓ {ls['pct']}%</span></div><div class="txt-gray" style="font-size:0.85rem; margin-top:4px;">₹{ls['current']:,.2f}</div></div>""", unsafe_allow_html=True)
+                for ls in losers: st.markdown(f"""<div class="trend-box"><div style="display:flex; justify-content:space-between; align-items:center;"><span class="txt-main" style="font-size:1rem;">{ls['symbol']}</span><span class="txt-red" style="font-size:1rem;">↓ {ls['pct']}%</span></div><div class="txt-gray" style="font-size:0.85rem; margin-top:4px;">₹{ls['current']:,.2f}</div></div>""", unsafe_allow_html=True)
             else: st.write("No losers currently.")
 
-    st.markdown("""<hr style="border-color:#1E293B;">""", unsafe_allow_html=True)
+    st.markdown("""<hr style="border-color:#E2E8F0;">""", unsafe_allow_html=True)
 
     if symbol:
-        st.markdown(f"""<h2 class="txt-white">💎 Terminal Analysis: <span style="color:#D4AF37 !important;">{symbol}</span></h2>""", unsafe_allow_html=True)
+        st.markdown(f"""<h2 class="txt-main">💎 Terminal Analysis: <span style="color:#D4AF37 !important;">{symbol}</span></h2>""", unsafe_allow_html=True)
         try:
             _hist = yf.Ticker(f"{symbol}.NS").history(period="2d")
             if len(_hist) >= 2:
@@ -208,7 +217,7 @@ def render_dashboard():
                 df = yf.Ticker(f"{symbol}.NS").history(period="1mo", interval="1d")
                 if not df.empty:
                     fig = go.Figure(data=[go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], increasing_line_color='#10B981', decreasing_line_color='#EF4444')])
-                    fig.update_layout(title=f"{symbol} (Last 1 Month)", template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10, t=40, b=10), xaxis=dict(showgrid=True, gridcolor='#1E293B', tickfont=dict(color='#94A3B8')), yaxis=dict(showgrid=True, gridcolor='#1E293B', tickfont=dict(color='#94A3B8')), title_font=dict(color='#FFFFFF'))
+                    fig.update_layout(title=f"{symbol} (Last 1 Month)", template="plotly_white", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10, t=40, b=10), xaxis=dict(showgrid=True, gridcolor='#E2E8F0', tickfont=dict(color='#475569')), yaxis=dict(showgrid=True, gridcolor='#E2E8F0', tickfont=dict(color='#475569')), title_font=dict(color='#000000'))
                     st.plotly_chart(fig, use_container_width=True)
             except: pass
                 
@@ -216,19 +225,19 @@ def render_dashboard():
             try:
                 info = yf.Ticker(f"{symbol}.NS").info
                 mcap = info.get('marketCap')
-                st.markdown(f"""<div class="metric-box"><div class="txt-gray" style="font-size:0.9rem;">Market Cap</div><div class="txt-white" style="font-size:1.4rem;">₹{mcap/10000000:,.2f} Cr</div></div>""", unsafe_allow_html=True)
+                st.markdown(f"""<div class="metric-box"><div class="txt-gray" style="font-size:0.9rem;">Market Cap</div><div class="txt-main" style="font-size:1.4rem;">₹{mcap/10000000:,.2f} Cr</div></div>""", unsafe_allow_html=True)
                 pe = info.get('trailingPE', 0)
-                pe_color = "txt-green" if pe and pe < 25 else "txt-red" if pe and pe > 40 else "txt-white"
+                pe_color = "txt-green" if pe and pe < 25 else "txt-red" if pe and pe > 40 else "txt-main"
                 st.markdown(f"""<div class="metric-box"><div class="txt-gray" style="font-size:0.9rem;">P/E Ratio</div><div class="{pe_color}" style="font-size:1.4rem;">{round(pe,2) if pe else "N/A"}</div></div>""", unsafe_allow_html=True)
                 roe = info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0
-                roe_color = "txt-green" if roe > 15 else "txt-red" if roe < 5 else "txt-white"
+                roe_color = "txt-green" if roe > 15 else "txt-red" if roe < 5 else "txt-main"
                 st.markdown(f"""<div class="metric-box"><div class="txt-gray" style="font-size:0.9rem;">ROE</div><div class="{roe_color}" style="font-size:1.4rem;">{round(roe,2)}%</div></div>""", unsafe_allow_html=True)
             except: pass
                 
         with tab3:
             try:
                 ticker = yf.Ticker(f"{symbol}.NS")
-                st.markdown("""<h3 class="txt-white">🚨 Promoter Trust Radar</h3>""", unsafe_allow_html=True)
+                st.markdown("""<h3 class="txt-main">🚨 Promoter Trust Radar</h3>""", unsafe_allow_html=True)
                 try:
                     insider = ticker.insider_transactions
                     if insider is not None and not insider.empty: _render_alert("🔴 **ALERT (Red Flag 🚩):** प्रमोटर/इनसाइडर की गतिविधि दर्ज की गई है।", "error")
